@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: korean-type
+    name: koreantype
     runtime: static
     buildCommand: ""
     staticPublishPath: ./
