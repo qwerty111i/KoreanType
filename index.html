@@ -1184,6 +1184,15 @@
             'Careful: 분 (minute) takes Sino numbers, but 분 (polite person) takes native numbers.'
           ],
           d: ['한','두','세','네','다섯','여섯','일곱','여덟','아홉','열','스물'],
+          hints: {
+            '개': 'items (general)', '명': 'people (casual)', '분': 'people (polite) — or minutes, with Sino numbers',
+            '마리': 'animals', '병': 'bottles', '권': 'books', '잔': 'cups or glasses', '조각': 'pieces',
+            '그릇': 'bowls', '살': 'age', '시': 'o’clock (hour of day)', '시간': 'hours of duration',
+            '층': 'floors', '학년': 'school year', '월': 'month of the year', '일': 'day of the month',
+            '초': 'seconds', '과': 'lesson numbers', '원': 'won (money)',
+            '한': 'one, before a counter', '두': 'two, before a counter', '세': 'three, before a counter',
+            '네': 'four, before a counter', '열': 'ten', '백': 'hundred', '천': 'thousand'
+          },
           e: [
             ['사과 [[한]] 개', 'one apple', ['한','두','세','네']],
             ['커피 [[두]] 잔 주세요', 'two cups of coffee, please', ['한','두','세','네']],
@@ -1262,6 +1271,7 @@
           x: 'When referring to a person casually, attach 이 to their name (usually about a third person). A subject marker then follows: 준영이 + 가 → 준영이가.',
           f: ['이름 + 이 (+ 가/는 …)  (준영 → 준영이가)'],
           d: ['이','가','아','야','은','는'],
+          hints: { '이': 'the casual marker you add to a name', '가': 'subject marker — not the name marker', '아': 'vocative, calling a name that ends in a consonant', '야': 'vocative, calling a name that ends in a vowel' },
           e: [
             ['준영[[이]]가 바이킹을 탈까?', 'Do you think Joonyoung will ride the viking?'],
             ['유진[[이]]가 커피를 살래.', 'Yujin is going to buy coffee.'],
@@ -2684,7 +2694,9 @@
       '아': 'calling a name that ends in a consonant',
       '야': 'calling a name that ends in a vowel',
       '지요': 'confirmation tag — "…, right?"',
-      '잖아요': '"as you know / didn\'t I tell you"'
+      '잖아요': '"as you know / didn\'t I tell you"',
+      '제가': '"I" as the subject (humble)', '내가': '"I" as the subject (plain)',
+      '난': '나는 shortened', '넌': '너는 shortened', '전': '저는 shortened'
     };
 
     function gExplain(pt, it, given) {
@@ -2788,7 +2800,7 @@
         $('flashcard').addEventListener('click', function () {
           state.gflip = !state.gflip;
           const en = $('cardEn');
-          if (en) en.textContent = state.gflip ? pt.e[idx()][1] : '';
+          if (en) en.innerHTML = state.gflip ? gCardBack(pt, pt.e[idx()]) : '';
         });
         $('cardAudio').addEventListener('click', function (e) {
           e.stopPropagation();
@@ -2808,6 +2820,29 @@
       renderPath();
     }
 
+    function gCardWhy(pt, ex) {
+      const raw = ex[0];
+      const m = /\[\[(.+?)\]\]/.exec(raw);
+      let h = '<div class="text-left max-w-md mx-auto mt-5 pt-4 border-t border-line/50">';
+      h += '<div class="text-[10px] uppercase tracking-wider text-sub/40 mb-2">why this form</div>';
+      if (m) {
+        const target = m[1];
+        const before = gkPlain(raw.slice(0, raw.indexOf('[['))).trim();
+        const prev = before.split(/\s+/).pop();
+        const gloss = (pt.hints && pt.hints[target]) || FORM_GLOSS[target] || '';
+        h += '<div class="text-sm text-text"><span class="text-main">' + esc(target) + '</span>' +
+             (gloss ? ' <span class="text-sub/70">— ' + esc(gloss) + '</span>' : '') + '</div>';
+        if (prev) h += '<div class="text-xs text-sub/60 mt-1">attaches to “' + esc(prev) + '”</div>';
+      }
+      h += '<div class="text-xs text-sub/60 mt-2 leading-relaxed">' + esc(pt.x) + '</div>';
+      h += '</div>';
+      return h;
+    }
+
+    function gCardBack(pt, ex) {
+      return '<div class="text-sub text-base">' + esc(ex[1]) + '</div>' + gCardWhy(pt, ex);
+    }
+
     function gStudyPanel(id, pt) {
       const n = pt.e.length;
       const i = Math.max(0, Math.min(state.gcard, n - 1));
@@ -2816,7 +2851,7 @@
         '<div class="flex items-center justify-between text-xs text-sub/40 mb-3"><span>' + (i + 1) + ' / ' + n + '</span><span>click the card to flip</span></div>' +
         '<div class="flashcard" id="flashcard">' +
           '<div class="text-2xl leading-relaxed mb-4">' + gkMarked(ex[0]) + '</div>' +
-          '<div id="cardEn" class="text-sub text-base min-h-[1.5rem]">' + (state.gflip ? esc(ex[1]) : '') + '</div>' +
+          '<div id="cardEn" class="w-full min-h-[1.5rem]">' + (state.gflip ? gCardBack(pt, ex) : '') + '</div>' +
         '</div>' +
         '<div class="flex items-center justify-between mt-5">' +
           '<button id="cardPrev" class="px-5 py-2 rounded-lg border border-line/60 text-sub text-sm hover:text-text hover:border-sub transition">←</button>' +
