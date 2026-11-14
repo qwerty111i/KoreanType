@@ -296,10 +296,11 @@
         </a>
 
         <!-- view tabs -->
-        <nav class="flex items-center gap-4 text-sm">
+        <nav class="flex items-center gap-3 sm:gap-4 text-sm">
           <button id="tabTyping" class="nav-tab active">typing</button>
           <button id="tabGrammar" class="nav-tab">grammar</button>
           <button id="tabVocab" class="nav-tab">vocab</button>
+          <button id="tabListen" class="nav-tab">listen</button>
         </nav>
       </div>
 
@@ -411,6 +412,15 @@
       <h2 class="text-text text-2xl">Vocabulary</h2>
     </div>
     <div id="vocabContent"></div>
+  </section>
+
+  <!-- =====================  LISTEN VIEW  ===================== -->
+  <section id="listenView" class="hidden max-w-3xl mx-auto px-4 sm:px-6 py-10">
+    <div class="mb-8">
+      <div class="text-sub/40 text-[11px] uppercase tracking-[0.2em] mb-2">listening</div>
+      <h2 class="text-text text-2xl">Hear it, then pick the meaning</h2>
+    </div>
+    <div id="listenContent"></div>
   </section>
 
   <!-- =====================  RESULTS OVERLAY  ===================== -->
@@ -756,20 +766,30 @@
             ['미나 씨[[도]] 학생이에요.', 'Mina is a student too.']
           ] },
         { t: '두 가지 수 — the two number systems',
-          x: 'Sino-Korean numbers (일 이 삼 ...) are used for money, dates, phone numbers and minutes. Native Korean numbers (하나 둘 셋 ...) are used with most counters and for age.',
-          f: ['Sino: 일(1) 이(2) 삼(3) 사(4) 오(5) 육(6) 칠(7) 팔(8) 구(9) 십(10) 백(100) 천(1000) 만(10000)', 'Native: 하나(1) 둘(2) 셋(3) 넷(4) 다섯(5) 여섯(6) 일곱(7) 여덟(8) 아홉(9) 열(10) 스물(20)'],
-          d: ['일','이','삼','사','오','육','칠','팔','구','십','하나','둘','셋','다섯','여섯','열','스물'],
+          x: 'Korean uses two sets of numbers. Sino-Korean (일 이 삼 …) is for money, dates, phone numbers, minutes and seconds, and counting above about 99. Native Korean (하나 둘 셋 …) is for age, o’clock, hours of duration and counting things with most counters. In most situations you cannot mix the two.',
+          f: ['Sino (한자어): 일 1 · 이 2 · 삼 3 · 사 4 · 오 5 · 육 6 · 칠 7 · 팔 8 · 구 9 · 십 10 · 백 100 · 천 1,000 · 만 10,000',
+              'Native (고유어): 하나 1 · 둘 2 · 셋 3 · 넷 4 · 다섯 5 · 여섯 6 · 일곱 7 · 여덟 8 · 아홉 9 · 열 10 · 스물 20',
+              'Native numbers change in front of a counter: 한 · 두 · 세 · 네 · 스무'],
+          notes: [
+            'Sino for: money (원), dates (년/월/일), minutes (분), seconds (초), phone numbers, floors (층), lesson numbers (과), school year (학년)',
+            'Native for: age (살), o’clock (시), hours of duration (시간), and most counters (개, 명, 마리, 권, 잔, 병 …)',
+            'Native 11–19: 열하나, 열둘 …  ·  Native 21: 스물하나  ·  Native 35: 서른다섯',
+            'Sino builds by tens: 이십 20, 삼십 30; 27 = 이십칠, 85 = 팔십오'
+          ],
+          d: ['일','이','삼','사','오','육','칠','팔','구','십','백','천','만','하나','둘','셋','다섯','여섯','열','스물'],
           e: [
-            ['[[삼]]', 'three — Sino-Korean'],
-            ['[[오]]', 'five — Sino-Korean'],
-            ['[[칠]]', 'seven — Sino-Korean'],
-            ['[[십]]', 'ten — Sino-Korean'],
-            ['[[이십]]', 'twenty — Sino-Korean'],
-            ['[[백]]', 'one hundred — Sino-Korean'],
-            ['[[셋]]', 'three — native Korean'],
-            ['[[다섯]]', 'five — native Korean'],
-            ['[[열]]', 'ten — native Korean'],
-            ['[[스물]]', 'twenty — native Korean']
+            ['Sino 3 = [[삼]]', 'three — Sino-Korean'],
+            ['Sino 5 = [[오]]', 'five — Sino-Korean'],
+            ['Sino 7 = [[칠]]', 'seven — Sino-Korean'],
+            ['Sino 10 = [[십]]', 'ten — Sino-Korean'],
+            ['Sino 20 = [[이십]]', 'twenty — Sino-Korean'],
+            ['Sino 100 = [[백]]', 'one hundred — Sino-Korean'],
+            ['Sino 27 = [[이십칠]]', 'twenty-seven — Sino-Korean'],
+            ['Native 3 = [[셋]]', 'three — native Korean'],
+            ['Native 5 = [[다섯]]', 'five — native Korean'],
+            ['Native 10 = [[열]]', 'ten — native Korean'],
+            ['Native 20 = [[스물]]', 'twenty — native Korean'],
+            ['Native 35 = [[서른다섯]]', 'thirty-five — native Korean']
           ] }
       ]
     },
@@ -1149,18 +1169,44 @@
             ['오늘 시간 [[있지요]]?', 'You have time today, right?']
           ] },
         { t: '수 세기 — counting & counters',
-          x: 'Noun + Number(native) + counter: 사과 한 개, 커피 두 잔, 학생 세 명. Before a counter: 하나→한, 둘→두, 셋→세, 넷→네.',
-          f: ['Noun + 숫자 + 단위  (사과 한 개)', '하나→한, 둘→두, 셋→세, 넷→네'],
-          d: ['한','두','세','네','다섯','여섯','스물'],
+          x: 'Count things as noun + number + counter: 사과 한 개 (one apple), 커피 두 잔 (two cups of coffee). The counter depends on what you are counting. Most counters take native Korean numbers (하나→한, 둘→두, 셋→세, 넷→네, 스물→스무), while a few take Sino-Korean numbers. Learn the counter together with the kind of thing it counts.',
+          f: ['Noun + number + counter  (사과 한 개 = one apple)',
+              'Native numbers in front of a counter: 한 · 두 · 세 · 네 · 스무',
+              'Native counters: 명·분 (people) · 살 (age) · 시 (o’clock) · 시간 (hours) · 마리 (animals) · 개 (items) · 병 (bottles) · 권 (books) · 잔 (cups) · 조각 (pieces) · 그릇 (bowls)',
+              'Sino counters: 년 (years) · 월 (months) · 일 (dates) · 분 (minutes) · 초 (seconds) · 층 (floors) · 과 (lesson no.) · 원 (money) · 학년 (school year)'],
+          notes: [
+            'People: 명 (casual) / 분 (polite) — 학생 세 명, 선생님 세 분',
+            'Age: 살 — 일곱 살  ·  O’clock: 시 — 두 시  ·  Duration in hours: 시간 — 두 시간',
+            'Animals: 마리 — 고양이 네 마리  ·  Items: 개 — 사과 한 개',
+            'Bottles: 병 — 물 두 병  ·  Books: 권 — 책 세 권  ·  Cups: 잔 — 커피 한 잔',
+            'Pieces: 조각 — 케이크 한 조각  ·  Bowls: 그릇 — 밥 한 그릇',
+            'Sino counters: 층 — 삼 층, 학년 — 이 학년, 월 — 십이 월, 일 — 삼 일, 분 — 십 분, 초 — 삼십 초, 과 — 삼 과, 원 — 천 원',
+            'Careful: 분 (minute) takes Sino numbers, but 분 (polite person) takes native numbers.'
+          ],
+          d: ['한','두','세','네','다섯','여섯','일곱','여덟','아홉','열','스물'],
           e: [
-            ['커피 [[두]] 잔 주세요.', 'Two cups of coffee, please.'],
-            ['사과 [[한]] 개', 'one apple'],
-            ['학생 [[세]] 명', 'three students'],
-            ['고양이 [[네]] 마리', 'four cats'],
-            ['책 [[다섯]] 권', 'five books'],
-            ['커피 [[한]] 잔 주세요.', 'One cup of coffee, please.'],
-            ['친구가 [[두]] 명 있어요.', 'I have two friends.'],
-            ['눈꽃빙수 [[네]] 개 주문할게요.', 'I will order four bingsus.']
+            ['사과 [[한]] 개', 'one apple', ['한','두','세','네']],
+            ['커피 [[두]] 잔 주세요', 'two cups of coffee, please', ['한','두','세','네']],
+            ['책 [[세]] 권', 'three books', ['한','두','세','네']],
+            ['고양이 [[네]] 마리', 'four cats', ['한','두','세','네']],
+            ['학생 다섯 [[명]]', 'five students', ['명','개','마리','권']],
+            ['선생님 세 [[분]]', 'three teachers (polite)', ['분','명','개','살']],
+            ['물 두 [[병]]', 'two bottles of water', ['병','잔','권','개']],
+            ['커피 한 [[잔]]', 'one cup of coffee', ['잔','병','그릇','권']],
+            ['케이크 한 [[조각]]', 'a piece of cake', ['조각','그릇','잔','병']],
+            ['밥 한 [[그릇]]', 'a bowl of rice', ['그릇','잔','병','조각']],
+            ['동생은 일곱 [[살]]이에요', 'My younger sibling is seven', ['살','시','명','개']],
+            ['지금 두 [[시]]예요', 'It is two o’clock now', ['시','시간','살','분']],
+            ['두 [[시간]] 공부해요', 'I study for two hours', ['시간','시','분','살']],
+            ['학생이 [[열]] 명 있어요', 'There are ten students', ['열','스물','다섯','한']],
+            ['우리 집은 삼 [[층]]이에요', 'My house is on the third floor', ['층','개','권','명']],
+            ['저는 이 [[학년]]이에요', 'I am a second-year student', ['학년','층','월','일']],
+            ['생일이 십이 [[월]]이에요', 'My birthday is in December', ['월','일','년','층']],
+            ['오늘은 삼 [[일]]이에요', 'Today is the 3rd', ['일','월','년','층']],
+            ['십 [[분]]만 기다려 주세요', 'Please wait ten minutes', ['분','초','시간','시']],
+            ['삼십 [[초]] 있어요', 'You have thirty seconds', ['초','분','시간','시']],
+            ['우리는 삼 [[과]]를 공부해요', 'We study lesson three', ['과','층','학년','월']],
+            ['이거 [[천]] 원이에요', 'This is 1,000 won', ['백','천','만','십']]
           ] }
       ]
     },
@@ -1230,6 +1276,8 @@
     }
   ];
   </script>
+
+  <script src="audio-manifest.js"></script>
 
   <!-- ================================================================= -->
   <!--                            APP                                     -->
@@ -1459,6 +1507,7 @@
       gtab: 'study',      // 'study' | 'test'
       gcard: 0, gflip: false,
       vlesson: 0, vcard: 0, vflip: false,
+      llesson: -1, lsource: 'mixed',
       words: [],
       typed: [],
       cursor: 0,
@@ -2417,11 +2466,23 @@
       return bestVoice();
     }
 
-    function speak(text) {
-      if (!synth || !text) return;
+    let ttsAudio = null;
+    function playFile(url, onFail) {
+      try {
+        if (!ttsAudio) ttsAudio = new Audio();
+        ttsAudio.pause();
+        ttsAudio.src = url;
+        try { ttsAudio.currentTime = 0; } catch (e) { /* ignore */ }
+        const p = ttsAudio.play();
+        if (p && p.catch) p.catch(function () { if (onFail) onFail(); });
+        return true;
+      } catch (e) { return false; }
+    }
+    function speakSynth(text) {
+      if (!synth) return;
       try {
         synth.cancel();
-        const u = new SpeechSynthesisUtterance(String(text));
+        const u = new SpeechSynthesisUtterance(gkSpeak(text) || String(text));
         const v = chosenVoice();
         if (v) u.voice = v;
         u.lang = (v && v.lang) || 'ko-KR';
@@ -2429,6 +2490,18 @@
         u.pitch = 1;
         synth.speak(u);
       } catch (e) { /* speech unavailable — ignore */ }
+    }
+    function speak(text) {
+      if (!text) return;
+      const clean = String(text).replace(/\[\[|\]\]/g, '').trim();
+      if (window.AUDIO) {
+        const f = window.AUDIO[clean] || window.AUDIO[gkSpeak(clean)];
+        if (f) {
+          if (!playFile(f, function () { speakSynth(clean); })) speakSynth(clean);
+          return;
+        }
+      }
+      speakSynth(clean);
     }
     function speakActive() {
       if (!state.speakWords) return;
@@ -2469,6 +2542,7 @@
           speakWords: state.speakWords, voiceName: state.voiceName, voiceRate: state.voiceRate,
           gprog: state.gprog, view: state.view, gmodes: state.gmodes,
           gtab: state.gtab, vlesson: state.vlesson,
+          llesson: state.llesson, lsource: state.lsource,
         }));
       } catch (e) { /* storage unavailable — ignore */ }
     }
@@ -2486,7 +2560,13 @@
         if (typeof s.speakWords === 'boolean') state.speakWords = s.speakWords;
         if (typeof s.voiceName === 'string') state.voiceName = s.voiceName;
         if (typeof s.voiceRate === 'number' && s.voiceRate >= 0.5 && s.voiceRate <= 2) state.voiceRate = s.voiceRate;
-        if (s.gprog && typeof s.gprog === 'object') state.gprog = s.gprog;
+        if (s.gprog && typeof s.gprog === 'object') {
+          state.gprog = s.gprog;
+          Object.keys(state.gprog).forEach(function (k) {
+            const p = state.gprog[k];
+            if (p && !p.mastered && p.done && p.best >= 80) p.mastered = true;
+          });
+        }
         if (s.gmodes && typeof s.gmodes === 'object') {
           state.gmodes = {
             mc: s.gmodes.mc !== false,
@@ -2494,9 +2574,11 @@
             full: s.gmodes.full === true
           };
         }
-        if (s.view === 'grammar' || s.view === 'vocab' || s.view === 'typing') state.view = s.view;
+        if (s.view === 'grammar' || s.view === 'vocab' || s.view === 'listen' || s.view === 'typing') state.view = s.view;
         if (s.gtab === 'study' || s.gtab === 'test') state.gtab = s.gtab;
         if (typeof s.vlesson === 'number' && s.vlesson >= 0 && s.vlesson < GRAMMAR.length) state.vlesson = s.vlesson;
+        if (typeof s.llesson === 'number' && s.llesson >= -1 && s.llesson < GRAMMAR.length) state.llesson = s.llesson;
+        if (s.lsource === 'words' || s.lsource === 'sentences' || s.lsource === 'mixed') state.lsource = s.lsource;
       } catch (e) { /* corrupted storage — ignore */ }
     }
 
@@ -2545,7 +2627,7 @@
     });
     let quizState = null;
 
-    function gDone(id) { return !!(state.gprog && state.gprog[id] && state.gprog[id].done); }
+    function gDone(id) { const p = state.gprog && state.gprog[id]; return !!(p && p.mastered); }
     function gBest(id) { return (state.gprog && state.gprog[id] && state.gprog[id].best) || 0; }
     function gUnlocked(idx) { return idx === 0 || gDone(GPOINTS[idx - 1].id); }
     function gCurrentIndex() {
@@ -2564,8 +2646,68 @@
       return String(s).replace(/\[\[|\]\]/g, '').replace(/[^\uAC00-\uD7A3\s]/g, ' ').replace(/\s+/g, ' ').trim();
     }
 
+    // short "what this form does" hints used when an answer is wrong
+    const FORM_GLOSS = {
+      '이': 'subject marker used after a consonant',
+      '가': 'subject marker used after a vowel',
+      '은': 'topic marker after a consonant — "as for …"',
+      '는': 'topic marker after a vowel — "as for …"',
+      '을': 'object marker used after a consonant',
+      '를': 'object marker used after a vowel',
+      '도': '"also / too" — it replaces 이/가 or 은/는',
+      '만': '"only"',
+      '에': 'location of existence or a time',
+      '에서': 'the place where an action happens',
+      '의': 'possession — "\'s"',
+      '이에요': '"is" after a consonant',
+      '예요': '"is" after a vowel',
+      '아요': 'polite ending after a ㅏ/ㅗ stem',
+      '어요': 'polite ending for other stems',
+      '해요': 'polite ending of a 하다 verb',
+      '았어요': 'past tense after a ㅏ/ㅗ stem',
+      '었어요': 'past tense for other stems',
+      '했어요': 'past tense of a 하다 verb',
+      '이었어요': 'past "was" after a consonant',
+      '였어요': 'past "was" after a vowel',
+      '을까요': '"shall we …?" after a consonant',
+      'ㄹ까요': '"shall we …?" after a vowel',
+      '을래요': '"I will / do you want to …?" after a consonant',
+      'ㄹ래요': '"I will / do you want to …?" after a vowel',
+      '을게요': '"I will …" after a consonant',
+      'ㄹ게요': '"I will …" after a vowel',
+      '고 싶어요': '"want to …"',
+      '이 아니에요': '"is not" after a consonant',
+      '가 아니에요': '"is not" after a vowel',
+      '러': '"in order to" after a vowel',
+      '으러': '"in order to" after a consonant',
+      '자': '"let\'s …"',
+      '아': 'calling a name that ends in a consonant',
+      '야': 'calling a name that ends in a vowel',
+      '지요': 'confirmation tag — "…, right?"',
+      '잖아요': '"as you know / didn\'t I tell you"'
+    };
+
+    function gExplain(pt, it, given) {
+      const tip = function (form) {
+        return (pt.hints && pt.hints[form]) || FORM_GLOSS[form] || '';
+      };
+      let h = '<div class="mt-2 space-y-1 text-xs">';
+      if (given) {
+        h += '<div><span class="text-sub/50">you chose</span> <span class="text-error">' + esc(given) + '</span>' +
+             (tip(given) ? ' <span class="text-sub/50">— ' + esc(tip(given)) + '</span>' : '') + '</div>';
+      }
+      if (it.kind !== 'full') {
+        h += '<div><span class="text-sub/50">correct</span> <span class="text-main">' + esc(it.answer) + '</span>' +
+             (tip(it.answer) ? ' <span class="text-sub/50">— ' + esc(tip(it.answer)) + '</span>' : '') + '</div>';
+      }
+      h += '<div class="text-sub/60 pt-1 leading-relaxed">' + esc(pt.x) + '</div>';
+      h += '</div>';
+      return h;
+    }
+
     function renderPath() {
-      let h = '';
+      const masteredCount = GPOINTS.filter(function (g) { return gDone(g.id); }).length;
+      let h = '<div class="text-sub/30 text-[10px] mb-4">' + masteredCount + ' / ' + GPOINTS.length + ' mastered</div>';
       GRAMMAR.forEach(function (les) {
         h += '<div>' +
                '<div class="text-sub/40 text-[11px] uppercase tracking-wider mb-2">Lesson ' + les.l + '</div>' +
@@ -2577,6 +2719,10 @@
                  '<span class="w-3 shrink-0 ' + (done ? 'text-main' : 'text-sub/20') + '">' + (done ? '✓' : '·') + '</span>' +
                  '<span class="truncate">' + esc(pt.t) + '</span></div>';
         });
+        const exDone = gDone('exam-' + les.l);
+        h += '<div class="gp-item mt-1' + (state.gpoint === 'exam-' + les.l ? ' active' : '') + '" data-exam="' + les.l + '">' +
+               '<span class="w-3 shrink-0 ' + (exDone ? 'text-main' : 'text-sub/35') + '">' + (exDone ? '✓' : '★') + '</span>' +
+               '<span class="truncate text-sub">master exam</span></div>';
         h += '</div></div>';
       });
       $('grammarPath').innerHTML = h;
@@ -2591,6 +2737,7 @@
       let h = '<div class="max-w-3xl">';
       h += '<div class="text-[11px] uppercase tracking-[0.2em] text-sub/40 mb-2">Lesson ' + les.l + ' · ' + esc(les.t) + '</div>';
       h += '<h2 class="text-text text-3xl mb-4">' + esc(pt.t) + '</h2>';
+      if (done) h += '<div class="text-[11px] uppercase tracking-wider text-main -mt-2 mb-4">✓ mastered</div>';
       h += '<p class="text-sub leading-relaxed mb-8">' + esc(pt.x) + '</p>';
 
       h += '<div class="mb-8"><div class="text-[11px] uppercase tracking-wider text-sub/40 mb-3">how to form</div><ul class="space-y-2">';
@@ -2598,6 +2745,14 @@
         h += '<li class="flex gap-2 text-sm text-text/85"><span class="text-main shrink-0">▸</span><span>' + esc(f) + '</span></li>';
       });
       h += '</ul></div>';
+
+      if (pt.notes && pt.notes.length) {
+        h += '<div class="mb-8 border-l-2 border-line pl-4"><div class="text-[11px] uppercase tracking-wider text-sub/40 mb-2">notes</div><ul class="space-y-1">';
+        pt.notes.forEach(function (n) {
+          h += '<li class="text-sm text-sub/80">' + esc(n) + '</li>';
+        });
+        h += '</ul></div>';
+      }
 
       h += '<div class="flex items-center gap-2 mb-7">' +
              '<button class="seg-btn' + (state.gtab === 'study' ? ' active' : '') + '" data-gtab="study">cards</button>' +
@@ -2637,7 +2792,7 @@
         });
         $('cardAudio').addEventListener('click', function (e) {
           e.stopPropagation();
-          speak(gkSpeak(pt.e[idx()][0]));
+          speak(pt.e[idx()][0]);
         });
         $('cardPrev').addEventListener('click', function () {
           state.gcard = (state.gcard - 1 + pt.e.length) % pt.e.length;
@@ -2727,9 +2882,160 @@
         const en = $('vcardEn');
         if (en) en.textContent = state.vflip ? card[1] : '';
       });
-      $('vAudio').addEventListener('click', function (e) { e.stopPropagation(); speak(gkSpeak(card[0])); });
+      $('vAudio').addEventListener('click', function (e) { e.stopPropagation(); speak(card[0]); });
       $('vPrev').addEventListener('click', function () { state.vcard = (state.vcard - 1 + n) % n; state.vflip = false; renderVocab(); });
       $('vNext').addEventListener('click', function () { state.vcard = (state.vcard + 1) % n; state.vflip = false; renderVocab(); });
+    }
+
+    /* ---------------- listening ---------------- */
+    let listenState = null;
+
+    function lChip(v, label) {
+      return '<button class="seg-btn' + (state.lsource === v ? ' active' : '') + '" data-lsource="' + v + '">' + label + '</button>';
+    }
+
+    function renderListen() {
+      const li = state.llesson;
+      let h = '<div class="max-w-2xl">';
+      h += '<div class="text-[11px] uppercase tracking-wider text-sub/40 mb-3">lesson</div>';
+      h += '<div class="flex flex-wrap gap-2 mb-8">';
+      h += '<button class="seg-btn' + (li === -1 ? ' active' : '') + '" data-llesson="-1">all lessons</button>';
+      GRAMMAR.forEach(function (l, idx) {
+        h += '<button class="seg-btn' + (idx === li ? ' active' : '') + '" data-llesson="' + idx + '">Lesson ' + l.l + '</button>';
+      });
+      h += '</div>';
+
+      h += '<div class="text-[11px] uppercase tracking-wider text-sub/40 mb-3">what to hear</div>';
+      h += '<div class="flex flex-wrap gap-2 mb-9">' +
+             lChip('words', 'words') + lChip('sentences', 'sentences') + lChip('mixed', 'mixed') +
+           '</div>';
+
+      h += '<div class="flex flex-wrap items-center gap-4">' +
+             '<button id="lStart" class="px-7 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">start listening</button>' +
+             (gBest('listen-' + state.llesson) ? '<span class="text-xs text-main">best ' + gBest('listen-' + state.llesson) + '%</span>' : '') +
+           '</div>';
+      h += '</div>';
+
+      $('listenContent').innerHTML = h;
+      $('listenContent').querySelectorAll('[data-llesson]').forEach(function (b) {
+        b.addEventListener('click', function () { state.llesson = Number(b.dataset.llesson); saveSettings(); renderListen(); });
+      });
+      $('listenContent').querySelectorAll('[data-lsource]').forEach(function (b) {
+        b.addEventListener('click', function () { state.lsource = b.dataset.lsource; saveSettings(); renderListen(); });
+      });
+      $('lStart').addEventListener('click', function () { startListen(); });
+    }
+
+    function buildListenItems() {
+      const lessons = state.llesson === -1 ? GRAMMAR : [GRAMMAR[state.llesson]];
+      const words = [], sents = [];
+      lessons.forEach(function (les) {
+        les.v.forEach(function (p) { words.push({ ko: p[0], en: p[1] }); });
+        les.p.forEach(function (pt) {
+          pt.e.forEach(function (ex) {
+            const ko = gkPlain(ex[0]);
+            if (/^[가-힣\s?!.,~]+$/.test(ko)) sents.push({ ko: ko, en: ex[1] });
+          });
+        });
+      });
+      const pool = state.lsource === 'words' ? words : state.lsource === 'sentences' ? sents : words.concat(sents);
+      const seen = {}, uniq = [];
+      pool.forEach(function (x) { if (!seen[x.ko]) { seen[x.ko] = 1; uniq.push(x); } });
+      const ens = uniq.map(function (x) { return x.en; });
+      const n = Math.min(20, uniq.length);
+      return shuffle(uniq.slice()).slice(0, n).map(function (x) {
+        const wrong = shuffle(ens.filter(function (e) { return e !== x.en; })).slice(0, 3);
+        return { ko: x.ko, en: x.en, options: shuffle([x.en].concat(wrong)) };
+      });
+    }
+
+    function startListen() {
+      const qs = buildListenItems();
+      if (!qs.length) return;
+      listenState = { qs: qs, i: 0, score: 0, answered: false };
+      renderListenQuestion();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderListenQuestion() {
+      if (!listenState) { renderListen(); return; }
+      const total = listenState.qs.length;
+      if (listenState.i >= total) { renderListenResult(); return; }
+      const q = listenState.qs[listenState.i];
+      const speaker = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 5 6 9H2v6h4l5 4V5z"></path><path d="M15.5 8.5a5 5 0 0 1 0 7"></path><path d="M19 5a9 9 0 0 1 0 14"></path></svg>';
+
+      let h = '<div class="max-w-2xl">';
+      h += '<div class="flex items-center justify-between mb-4"><button id="lExit" class="text-xs text-sub hover:text-text">← exit</button><div class="text-xs text-sub/50">' + (listenState.i + 1) + ' / ' + total + '</div></div>';
+      h += '<div class="h-1.5 w-full bg-line/40 rounded-full overflow-hidden mb-9"><div class="h-full bg-main transition-all duration-300" style="width:' + Math.round(listenState.i / total * 100) + '%"></div></div>';
+      h += '<div class="flex justify-center mb-9"><button id="lPlay" class="flex items-center gap-3 px-8 py-4 rounded-xl border border-line text-sub hover:text-main hover:border-main transition">' + speaker + '<span>play audio</span></button></div>';
+      h += '<div class="text-[11px] uppercase tracking-wider text-sub/40 mb-3 text-center">what does it mean?</div>';
+      h += '<div class="grid gap-2" id="lOptions">';
+      q.options.forEach(function (o, i) { h += '<button class="g-opt text-left" data-lopt="' + i + '">' + esc(o) + '</button>'; });
+      h += '</div><div id="lFb" class="mt-6 text-sm min-h-[3rem]"></div></div>';
+
+      $('listenContent').innerHTML = h;
+      $('lExit').addEventListener('click', function () { listenState = null; renderListen(); });
+      $('lPlay').addEventListener('click', function () { speak(q.ko); });
+      $('lOptions').querySelectorAll('.g-opt').forEach(function (b) {
+        b.addEventListener('click', function () { answerListen(Number(b.dataset.lopt)); });
+      });
+      speak(q.ko);
+    }
+
+    function answerListen(idx) {
+      if (!listenState || listenState.answered) return;
+      const q = listenState.qs[listenState.i];
+      const chosen = q.options[idx];
+      const correct = chosen === q.en;
+      listenState.answered = true;
+      if (correct) listenState.score++;
+      $('lOptions').querySelectorAll('.g-opt').forEach(function (b, i) {
+        b.disabled = true;
+        if (q.options[i] === q.en) b.classList.add('correct');
+        else if (i === idx) b.classList.add('wrong');
+      });
+      const last = listenState.i + 1 >= listenState.qs.length;
+      $('lFb').innerHTML = '<div class="flex items-start justify-between gap-4">' +
+        '<div>' +
+          (correct ? '<div class="text-main text-sm">✓ correct</div>'
+                   : '<div class="text-error text-sm">✗ not quite</div>') +
+          '<div class="text-sub text-lg mt-2">' + esc(q.ko) + '</div>' +
+          '<div class="text-sub/50 text-xs">' + esc(q.en) + '</div>' +
+        '</div>' +
+        '<button id="lNext" class="shrink-0 px-5 py-2 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">' + (last ? 'finish' : 'next') + '</button></div>';
+      $('lNext').addEventListener('click', function () {
+        listenState.answered = false;
+        listenState.i++;
+        renderListenQuestion();
+      });
+    }
+
+    function renderListenResult() {
+      const total = listenState.qs.length;
+      const pct = Math.round(listenState.score / total * 100);
+      const passed = pct >= 80;
+      const key = 'listen-' + state.llesson;
+      if (!state.gprog[key]) state.gprog[key] = {};
+      state.gprog[key].best = Math.max(gBest(key), pct);
+      if (passed) state.gprog[key].mastered = true;
+      saveSettings();
+
+      let h = '<div class="max-w-2xl text-center py-10">';
+      if (passed) {
+        h += '<div class="flex justify-center mb-5 text-main"><svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div>';
+        h += '<div class="text-text text-2xl mb-1">listening mastered</div>';
+      } else {
+        h += '<div class="text-6xl text-error mb-3">' + pct + '%</div>';
+      }
+      h += '<div class="text-sub text-sm mb-7">' + listenState.score + ' / ' + total + ' correct</div>';
+      h += '<div class="flex flex-wrap items-center justify-center gap-3">' +
+             '<button id="lRetry" class="px-5 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">try again</button>' +
+             '<button id="lBack" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">back</button>' +
+           '</div></div>';
+      $('listenContent').innerHTML = h;
+      $('lRetry').addEventListener('click', function () { startListen(); });
+      $('lBack').addEventListener('click', function () { listenState = null; renderListen(); });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
     function buildOptions(answer, d) {
@@ -2742,13 +3048,13 @@
       const exs = g.pt.e;
       const marked = exs.filter(function (ex) { return gkTarget(ex[0]); });
       if (modes.mc) shuffle(marked.slice()).forEach(function (ex) {
-        items.push({ kind: 'mc', ko: ex[0], en: ex[1], answer: gkTarget(ex[0]), options: buildOptions(gkTarget(ex[0]), g.pt.d) });
+        items.push({ kind: 'mc', pt: g.pt, ko: ex[0], en: ex[1], answer: gkTarget(ex[0]), options: buildOptions(gkTarget(ex[0]), ex[2] || g.pt.d) });
       });
       if (modes.fill) shuffle(marked.slice()).forEach(function (ex) {
-        items.push({ kind: 'fill', ko: ex[0], en: ex[1], answer: gkTarget(ex[0]) });
+        items.push({ kind: 'fill', pt: g.pt, ko: ex[0], en: ex[1], answer: gkTarget(ex[0]) });
       });
       if (modes.full) shuffle(exs.filter(function (ex) { return /^[가-힣\s?!.,~]+$/.test(gkPlain(ex[0])); })).forEach(function (ex) {
-        items.push({ kind: 'full', ko: ex[0], en: ex[1], answer: gkPlain(ex[0]) });
+        items.push({ kind: 'full', pt: g.pt, ko: ex[0], en: ex[1], answer: gkPlain(ex[0]) });
       });
       return items;
     }
@@ -2760,7 +3066,38 @@
       let items = buildItems(g, state.gmodes);
       if (!items.length) { state.gmodes.mc = true; items = buildItems(g, state.gmodes); }
       quizState = {
-        id: id, items: items, i: 0, score: 0, answered: false, results: [],
+        id: id, kind: 'point', items: items, i: 0, score: 0, answered: false, results: [],
+        typed: '', composer: createComposer(),
+      };
+      renderPath();
+      renderQuestion();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function buildExam(lessonNum) {
+      const pool = GPOINTS.filter(function (g) { return g.lesson.l <= lessonNum; });
+      let items = [];
+      pool.forEach(function (g) {
+        const marked = g.pt.e.filter(function (ex) { return gkTarget(ex[0]); });
+        shuffle(marked.slice()).slice(0, 2).forEach(function (ex, i) {
+          if (i === 0) {
+            items.push({ kind: 'mc', pt: g.pt, ko: ex[0], en: ex[1], answer: gkTarget(ex[0]), options: buildOptions(gkTarget(ex[0]), ex[2] || g.pt.d) });
+          } else {
+            items.push({ kind: 'fill', pt: g.pt, ko: ex[0], en: ex[1], answer: gkTarget(ex[0]) });
+          }
+        });
+      });
+      items = shuffle(items);
+      return items.slice(0, 36);
+    }
+
+    function startExam(lessonNum) {
+      const items = buildExam(lessonNum);
+      if (!items.length) return;
+      state.gpoint = 'exam-' + lessonNum;
+      quizState = {
+        id: 'exam-' + lessonNum, kind: 'exam', lesson: lessonNum,
+        items: items, i: 0, score: 0, answered: false, results: [],
         typed: '', composer: createComposer(),
       };
       renderPath();
@@ -2869,12 +3206,13 @@
       quizState.results.push({ kind: it.kind, ko: gkPlain(it.ko), en: it.en, answer: it.answer, given: given, correct: correct });
 
       const last = quizState.i + 1 >= quizState.items.length;
+      const pt = it.pt || (GPOINTS.filter(function (x) { return x.id === quizState.id; })[0] || {}).pt || { x: '', f: [] };
       $('gFb').innerHTML =
         '<div class="flex items-start justify-between gap-4">' +
-          '<div>' +
-            (correct ? '<span class="text-main">✓ correct</span>'
-                     : '<span class="text-error">✗</span> <span class="text-sub/60">answer:</span> <span class="text-main">' + esc(it.answer) + '</span>') +
-            '<div class="text-sub/60 text-xs mt-1">' + esc(gkPlain(it.ko)) + '</div>' +
+          '<div class="min-w-0">' +
+            (correct ? '<div class="text-main text-sm">✓ correct</div>'
+                     : '<div class="text-error text-sm">✗ not quite</div>' + gExplain(pt, it, given)) +
+            '<div class="text-sub/60 text-xs mt-2 leading-relaxed">' + gkMarked(it.ko) + '</div>' +
           '</div>' +
           '<button id="gNext" class="shrink-0 px-5 py-2 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">' + (last ? 'finish' : 'next') + '</button>' +
         '</div>';
@@ -2896,34 +3234,55 @@
     function renderResult() {
       const total = quizState.items.length;
       const pct = Math.round(quizState.score / total * 100);
+      const passed = pct >= 80;
       const id = quizState.id;
+      const isExam = quizState.kind === 'exam';
+      const lessonNum = quizState.lesson;
       if (!state.gprog[id]) state.gprog[id] = {};
-      state.gprog[id].done = true;
       state.gprog[id].best = Math.max(gBest(id), pct);
+      if (passed) state.gprog[id].mastered = true;
       saveSettings();
 
-      let h = '<div class="text-center py-6">' +
-                '<div class="text-[11px] uppercase tracking-[0.3em] text-sub/50 mb-3">drill complete</div>' +
-                '<div class="text-6xl text-main mb-2">' + pct + '%</div>' +
-                '<div class="text-sub mb-6">' + quizState.score + ' / ' + total + ' correct</div>' +
-                '<div class="flex flex-wrap items-center justify-center gap-3">' +
-                  '<button id="gRetry" class="px-5 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">drill again</button>' +
-                  '<button id="gBackPoint" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">back to the lesson</button>' +
-                '</div></div>';
+      let h = '<div class="text-center py-10">';
+      if (passed) {
+        h += '<div class="flex justify-center mb-5 text-main"><svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div>';
+        h += '<div class="text-text text-2xl mb-1">' + (isExam ? 'Lesson ' + lessonNum + ' mastered' : 'section mastered') + '</div>';
+        h += '<div class="text-sub text-sm">' + pct + '% · ' + quizState.score + ' / ' + total + '</div>';
+      } else {
+        h += '<div class="text-6xl text-error mb-3">' + pct + '%</div>';
+        h += '<div class="text-sub mb-1">' + quizState.score + ' / ' + total + ' correct</div>';
+        h += '<div class="text-sub/50 text-xs">score 80% to master this ' + (isExam ? 'lesson' : 'section') + '</div>';
+      }
+      h += '<div class="flex flex-wrap items-center justify-center gap-3 mt-7">' +
+             '<button id="gRetry" class="px-5 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">try again</button>' +
+             '<button id="gBackPoint" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">' + (isExam ? 'back to lessons' : 'back to the lesson') + '</button>' +
+           '</div></div>';
 
       const wrong = quizState.results.filter(function (r) { return !r.correct; });
-      h += '<div class="mt-8 text-[11px] uppercase tracking-wider text-sub/50 mb-3">' +
-             (wrong.length ? 'missed (' + wrong.length + ')' : 'review') + '</div><div class="space-y-1.5">';
+      h += '<div class="mt-10 text-[11px] uppercase tracking-wider text-sub/40 mb-3">' +
+             (wrong.length ? 'missed (' + wrong.length + ')' : 'all correct') + '</div><div class="space-y-1.5">';
       quizState.results.forEach(function (r) {
         h += '<div class="flex items-start gap-3 text-sm px-3 py-2 rounded-lg ' + (r.correct ? '' : 'bg-error/10') + '">' +
                '<span class="' + (r.correct ? 'text-main' : 'text-error') + '">' + (r.correct ? '✓' : '✗') + '</span>' +
-               '<div><div class="text-text">' + esc(r.ko) + '</div><div class="text-sub/60 text-xs">' + esc(r.en) + '</div></div></div>';
+               '<div><div class="text-text">' + esc(r.ko) + '</div><div class="text-sub/60 text-xs">' + esc(r.en) + '</div>' +
+               (!r.correct ? '<div class="text-xs text-main mt-0.5">correct: ' + esc(r.answer) + '</div>' : '') + '</div></div>';
       });
       h += '</div>';
 
       $('grammarContent').innerHTML = h;
-      $('gRetry').addEventListener('click', function () { startPractice(id); });
-      $('gBackPoint').addEventListener('click', function () { renderPoint(id); });
+      $('gRetry').addEventListener('click', function () {
+        if (isExam) startExam(lessonNum); else startPractice(id);
+      });
+      $('gBackPoint').addEventListener('click', function () {
+        if (isExam) {
+          const first = GPOINTS.filter(function (g) { return g.lesson.l === lessonNum; })[0];
+          renderPath();
+          if (first) renderPoint(first.id);
+        } else {
+          renderPath();
+          renderPoint(id);
+        }
+      });
       renderPath();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
@@ -2976,14 +3335,16 @@
     }
 
     function setView(v) {
-      state.view = (v === 'grammar' || v === 'vocab') ? v : 'typing';
+      state.view = (v === 'grammar' || v === 'vocab' || v === 'listen') ? v : 'typing';
       const isTyping = state.view === 'typing';
       $('typingView').classList.toggle('hidden', !isTyping);
       $('grammarView').classList.toggle('hidden', state.view !== 'grammar');
       $('vocabView').classList.toggle('hidden', state.view !== 'vocab');
+      $('listenView').classList.toggle('hidden', state.view !== 'listen');
       $('tabTyping').classList.toggle('active', state.view === 'typing');
       $('tabGrammar').classList.toggle('active', state.view === 'grammar');
       $('tabVocab').classList.toggle('active', state.view === 'vocab');
+      $('tabListen').classList.toggle('active', state.view === 'listen');
       if (isTyping) {
         if (!panelOpen) capture.focus({ preventScroll: true });
       } else {
@@ -2995,8 +3356,12 @@
             const idx = gCurrentIndex();
             if (GPOINTS[idx]) renderPoint(GPOINTS[idx].id);
           }
-        } else {
+        } else if (state.view === 'vocab') {
           renderVocab();
+        } else if (listenState) {
+          renderListenQuestion();
+        } else {
+          renderListen();
         }
       }
       saveSettings();
@@ -3005,9 +3370,12 @@
     $('tabTyping').addEventListener('click', function () { setView('typing'); });
     $('tabGrammar').addEventListener('click', function () { setView('grammar'); });
     $('tabVocab').addEventListener('click', function () { setView('vocab'); });
+    $('tabListen').addEventListener('click', function () { setView('listen'); });
     $('grammarPath').addEventListener('click', function (e) {
+      const exam = e.target.closest('[data-exam]');
+      if (exam) { startExam(Number(exam.dataset.exam)); return; }
       const item = e.target.closest('[data-gp]');
-      if (!item || item.classList.contains('locked')) return;
+      if (!item) return;
       renderPoint(item.dataset.gp);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     });
