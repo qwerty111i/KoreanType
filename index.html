@@ -962,22 +962,23 @@
         // ---- vowel ----
         if (ime.jung === -1) {
           ime.jung = JUNG.indexOf(j);
+        } else if (ime.jong !== 0) {
+          // a vowel after a final consonant always moves that consonant into the
+          // next syllable — vowels never merge across a final consonant
+          const finChar = JONG[ime.jong];
+          const split = FINAL_SPLIT[finChar];
+          let keepJong = 0, moveChar = finChar;
+          if (split) { keepJong = JONG.indexOf(split[0]); moveChar = split[1]; }
+          ime.jong = keepJong;
+          state.typed[state.cursor] = (state.typed[state.cursor] || '') + imeRender();
+          imeReset();
+          ime.cho = CHO.indexOf(moveChar);
+          ime.jung = JUNG.indexOf(j);
+          ime.hist.push(moveChar);   // so backspace can replay this syllable
         } else {
           const combined = VOWEL_COMBINE[JUNG[ime.jung] + j];
           if (combined) {
             ime.jung = JUNG.indexOf(combined);
-          } else if (ime.jong !== 0) {
-            // a vowel after a final moves that consonant into the next syllable
-            const finChar = JONG[ime.jong];
-            const split = FINAL_SPLIT[finChar];
-            let keepJong = 0, moveChar = finChar;
-            if (split) { keepJong = JONG.indexOf(split[0]); moveChar = split[1]; }
-            ime.jong = keepJong;
-            state.typed[state.cursor] = (state.typed[state.cursor] || '') + imeRender();
-            imeReset();
-            ime.cho = CHO.indexOf(moveChar);
-            ime.jung = JUNG.indexOf(j);
-            ime.hist.push(moveChar);   // so backspace can replay this syllable
           } else {
             imeFlush();
             ime.jung = JUNG.indexOf(j);
