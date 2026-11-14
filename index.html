@@ -1033,7 +1033,7 @@
           const t = target[c];
           const pc = p[c];
 
-          if (c >= compStart) {
+          if (c >= compStart && c < p.length) {
             // syllable still being assembled by the IME — shown, but never as an error
             inner += '<span class="ch-composing">' + esc(pc) + '</span>';
           } else if (t === undefined) {
