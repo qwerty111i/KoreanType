@@ -1,0 +1,1697 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="default_dark">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>KoreanType — learn Korean by typing</title>
+
+<!-- Tailwind (Play CDN) -->
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        colors: {
+          bg:     'rgb(var(--c-bg) / <alpha-value>)',
+          sub:    'rgb(var(--c-sub) / <alpha-value>)',
+          main:   'rgb(var(--c-main) / <alpha-value>)',
+          text:   'rgb(var(--c-text) / <alpha-value>)',
+          error:  'rgb(var(--c-error) / <alpha-value>)',
+          panel:  'rgb(var(--c-panel) / <alpha-value>)',
+          line:   'rgb(var(--c-line) / <alpha-value>)',
+        },
+        fontFamily: {
+          mono: ['"Roboto Mono"', '"Noto Sans KR"', 'ui-monospace', 'SFMono-Regular', 'Menlo', 'monospace'],
+        },
+      },
+    },
+  };
+</script>
+
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" />
+
+<style>
+  :root {
+    /* palette — overwritten per theme by JS (RGB triplets) */
+    --c-bg:    18 18 18;
+    --c-panel: 26 26 26;
+    --c-line:  42 42 42;
+    --c-sub:   100 100 107;
+    --c-text:  209 208 197;
+    --c-main:  226 183 20;
+    --c-caret: 226 183 20;
+    --c-error: 202 71 84;
+
+    --word-size: 2rem;
+    --word-lh: 1.2;
+    --line-gap: 2.9rem;
+  }
+  @media (max-width: 768px) {
+    :root { --word-size: 1.4rem; --line-gap: 2.2rem; }
+  }
+
+  html, body { height: 100%; }
+  body {
+    background: rgb(var(--c-bg));
+    color: rgb(var(--c-sub));
+    font-family: 'Roboto Mono', 'Noto Sans KR', ui-monospace, SFMono-Regular, Menlo, monospace;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---- Typing words ---- */
+  #words { position: relative; will-change: transform; transition: transform .16s ease-out; }
+  .word {
+    display: inline-block;
+    font-size: var(--word-size);
+    line-height: var(--word-lh);
+    margin: 0 .6rem var(--line-gap);
+    white-space: nowrap;
+    user-select: none;
+    border-bottom: 2px solid transparent;
+    padding-bottom: 2px;
+    transition: border-color .12s;
+  }
+  .word-active { border-bottom-color: rgb(var(--c-main) / .3); }
+
+  .ch-pending { color: rgb(var(--c-sub)); transition: color .04s; }
+  .word-active .ch-pending { color: color-mix(in srgb, rgb(var(--c-sub)), rgb(var(--c-text)) 28%); }
+  .ch-correct { color: rgb(var(--c-text)); }
+  .ch-wrong { color: rgb(var(--c-error)); text-decoration: underline; text-decoration-color: rgb(var(--c-error) / .45); }
+  /* a syllable currently being composed by the IME — never shown as an error */
+  .ch-composing { color: rgb(var(--c-main)); }
+
+  /* the English meaning, rendered under the active word inside the text area */
+  .word-meaning {
+    position: absolute;
+    font-size: .78rem;
+    line-height: 1.2;
+    letter-spacing: .03em;
+    color: color-mix(in srgb, rgb(var(--c-sub)), rgb(var(--c-text)) 15%);
+    white-space: nowrap;
+    pointer-events: none;
+    transition: left .12s ease-out, top .12s ease-out;
+  }
+  .word-meaning::before { content: '— '; opacity: .5; }
+
+  .caret {
+    display: inline-block;
+    width: 3px;
+    height: 1.2em;
+    background: rgb(var(--c-caret));
+    border-radius: 1px;
+    margin: 0 -1.5px;
+    vertical-align: -0.22em;
+    animation: blink 1s steps(1) infinite;
+  }
+  body.typing .caret { animation: none; opacity: 1; }
+  @keyframes blink { 0%,49% { opacity: 1; } 50%,100% { opacity: 0; } }
+
+  /* ---- Buttons / settings bar ---- */
+  .pill-btn {
+    padding: .35rem .8rem;
+    border-radius: .5rem;
+    font-size: .8rem;
+    color: rgb(var(--c-sub));
+    transition: color .12s, background-color .12s;
+    cursor: pointer;
+  }
+  .pill-btn:hover { color: rgb(var(--c-text)); }
+  .pill-btn.active { color: rgb(var(--c-main)); }
+
+  .seg-btn {
+    padding: .4rem .9rem;
+    border-radius: .5rem;
+    border: 1px solid rgb(var(--c-line));
+    color: rgb(var(--c-sub));
+    font-size: .8rem;
+    cursor: pointer;
+    transition: color .12s, border-color .12s, background-color .12s;
+  }
+  .seg-btn:hover { color: rgb(var(--c-text)); }
+  .seg-btn.active { color: rgb(var(--c-main)); border-color: rgb(var(--c-main)); }
+
+  #capture {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: text;
+    background: transparent;
+    border: 0;
+    outline: 0;
+    z-index: 20;
+  }
+
+  /* ---- settings panel ---- */
+  .theme-btn {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+    padding: .6rem .7rem;
+    border-radius: .55rem;
+    border: 2px solid transparent;
+    font-size: .74rem;
+    text-align: left;
+    cursor: pointer;
+    transition: border-color .1s, transform .1s;
+  }
+  .theme-btn:hover { transform: translateY(-1px); }
+  .theme-btn.active { border-color: rgb(var(--c-main)); }
+  .theme-dots { display: flex; gap: 3px; }
+  .theme-dot { width: 11px; height: 11px; border-radius: 3px; display: inline-block; }
+  .theme-btn.animated::after {
+    content: '✦';
+    position: absolute; top: .45rem; right: .5rem;
+    font-size: .65rem; opacity: .85;
+  }
+  .theme-btn { position: relative; }
+
+  /* ---- on-screen keyboard ---- */
+  #keyboard { user-select: none; }
+  .kbd-row { display: flex; justify-content: center; gap: .35rem; margin-bottom: .35rem; }
+  .kbd-key {
+    min-width: 2.6rem;
+    height: 2.6rem;
+    padding: 0 .4rem;
+    border-radius: .55rem;
+    border: 1px solid rgb(var(--c-line));
+    background: rgb(var(--c-panel));
+    color: rgb(var(--c-sub));
+    font-size: 1rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background-color .08s, color .08s, transform .08s;
+  }
+  .kbd-key:hover { color: rgb(var(--c-text)); border-color: rgb(var(--c-sub)); }
+  .kbd-key.pressed { background: rgb(var(--c-main)); color: rgb(var(--c-bg)); border-color: rgb(var(--c-main)); transform: translateY(1px); }
+  @media (max-width: 768px) {
+    .kbd-key { min-width: 1.9rem; height: 2rem; font-size: .8rem; }
+    .kbd-row { gap: .22rem; margin-bottom: .22rem; }
+  }
+
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 8px; }
+
+  .stat-big { font-size: 3rem; line-height: 1; font-weight: 500; }
+</style>
+</head>
+
+<body class="min-h-full font-mono">
+
+  <!-- =====================  TOP BAR  ===================== -->
+  <header class="w-full">
+    <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+      <!-- logo -->
+      <a id="logoBtn" class="flex items-center gap-3 select-none cursor-pointer" href="#">
+        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="text-main">
+          <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+          <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path>
+        </svg>
+        <div class="leading-none">
+          <div class="text-sub text-xl font-medium">
+            <span class="text-text">Korean</span><span class="text-main">Type</span>
+          </div>
+          <div class="text-[10px] tracking-widest text-sub/70 mt-1">한국어 타자 연습</div>
+        </div>
+      </a>
+
+      <!-- live ticker + settings (Monkeytype places the gear top-right) -->
+      <div class="flex items-center gap-6">
+        <div class="flex items-center gap-6 text-sm">
+          <div class="text-center">
+            <div class="text-[10px] uppercase tracking-wider text-sub/70">wpm</div>
+            <div id="tWpm" class="text-main text-lg leading-none">0</div>
+          </div>
+          <div class="text-center">
+            <div class="text-[10px] uppercase tracking-wider text-sub/70">acc</div>
+            <div id="tAcc" class="text-main text-lg leading-none">--</div>
+          </div>
+          <div class="text-center">
+            <div class="text-[10px] uppercase tracking-wider text-sub/70">time</div>
+            <div id="tTime" class="text-text text-lg leading-none">0:00</div>
+          </div>
+          <div class="text-center">
+            <div class="text-[10px] uppercase tracking-wider text-sub/70">left</div>
+            <div id="tLeft" class="text-text text-lg leading-none">0</div>
+          </div>
+        </div>
+
+        <button id="openSettings" class="text-sub hover:text-text transition p-2 rounded-lg hover:bg-panel" title="Settings" aria-label="Settings">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- =====================  MAIN  ===================== -->
+  <main class="max-w-4xl mx-auto px-6 flex flex-col items-center">
+
+    <!-- settings bar -->
+    <div class="w-full flex flex-wrap items-center justify-center gap-x-6 gap-y-3 py-4 mb-4
+                bg-panel/40 border border-line/60 rounded-xl px-5 text-sm">
+
+      <!-- word count -->
+      <div class="flex items-center gap-1">
+        <span class="text-sub/60 mr-2 text-xs uppercase tracking-wider">words</span>
+        <button class="pill-btn" data-len="10">10</button>
+        <button class="pill-btn" data-len="25">25</button>
+        <button class="pill-btn" data-len="50">50</button>
+      </div>
+
+      <div class="hidden sm:block w-px h-5 bg-line"></div>
+
+      <!-- tier -->
+      <div class="flex items-center gap-2">
+        <span class="text-sub/60 text-xs uppercase tracking-wider">list</span>
+        <select id="tierSelect"
+          class="bg-bg border border-line text-sub rounded-lg text-xs px-2 py-1.5 outline-none
+                 hover:text-text focus:text-text focus:border-main/50 cursor-pointer">
+          <option value="100">Top 100 · Most Common</option>
+          <option value="200">Top 200 · Common</option>
+          <option value="500">Top 500 · TOPIK Level 1</option>
+        </select>
+      </div>
+
+      <div class="hidden sm:block w-px h-5 bg-line"></div>
+
+      <!-- meaning toggle -->
+      <button id="meaningToggle" class="pill-btn active flex items-center gap-1.5">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span>meaning</span>
+      </button>
+
+      <div class="hidden sm:block w-px h-5 bg-line"></div>
+
+      <!-- restart -->
+      <button id="restartBtn" class="pill-btn flex items-center gap-1.5" title="Restart (Esc)">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path>
+        </svg>
+        <span>restart</span>
+      </button>
+    </div>
+
+    <!-- typing area -->
+    <div class="w-full relative">
+      <input id="capture" type="text" autocomplete="off" autocorrect="off" autocapitalize="off"
+             spellcheck="false" aria-label="typing input" />
+
+      <div id="wordsWindow" class="overflow-hidden select-none" style="height: 9rem;">
+        <div id="words"></div>
+      </div>
+    </div>
+
+    <!-- footer hints -->
+    <div class="w-full mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-sub/60">
+      <span><span class="text-sub">space</span> next word</span>
+      <span><span class="text-sub">backspace</span> previous</span>
+      <span><span class="text-sub">esc / tab</span> restart</span>
+      <span id="inputHint" class="text-main/80"></span>
+    </div>
+
+    <!-- on-screen keyboard -->
+    <div id="keyboard" class="w-full mt-7"></div>
+  </main>
+
+  <!-- =====================  RESULTS OVERLAY  ===================== -->
+  <section id="results"
+    class="hidden fixed inset-0 z-40 bg-bg/95 backdrop-blur-sm overflow-y-auto">
+    <div class="max-w-5xl mx-auto px-6 py-10">
+
+      <div class="flex items-center justify-between mb-8">
+        <div class="text-[11px] uppercase tracking-[0.3em] text-sub/60">test complete</div>
+        <div class="text-[11px] uppercase tracking-wider text-sub/50"><span id="rTier">&mdash;</span></div>
+      </div>
+
+      <!-- headline stats -->
+      <div class="flex flex-wrap items-end gap-x-12 gap-y-8 mb-10">
+        <div class="flex items-end gap-12">
+          <div>
+            <div id="rWpm" class="text-main" style="font-size:3.4rem;line-height:1;font-weight:500;">0</div>
+            <div class="text-[10px] uppercase tracking-wider text-sub/60 mt-1.5">wpm</div>
+          </div>
+          <div>
+            <div id="rAcc" class="text-text" style="font-size:3.4rem;line-height:1;font-weight:500;">0%</div>
+            <div class="text-[10px] uppercase tracking-wider text-sub/60 mt-1.5">acc</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-3 gap-x-10 gap-y-2.5 text-sm">
+          <div><span class="text-sub/60">raw</span> <span id="rRaw" class="text-text ml-1.5">0</span></div>
+          <div><span class="text-sub/60">consistency</span> <span id="rCons" class="text-text ml-1.5">0%</span></div>
+          <div><span class="text-sub/60">characters</span> <span id="rChars" class="text-text ml-1.5">0/0/0/0</span></div>
+          <div><span class="text-sub/60">time</span> <span id="rTime" class="text-text ml-1.5">0:00</span></div>
+          <div><span class="text-sub/60">words</span> <span id="rWords" class="text-text ml-1.5">0/0</span></div>
+          <div><span class="text-sub/60">errors</span> <span id="rErrors" class="text-text ml-1.5">0</span></div>
+        </div>
+      </div>
+
+      <!-- wpm / raw graph -->
+      <div class="w-full">
+        <canvas id="chart" class="w-full block" style="height: 230px;"></canvas>
+      </div>
+      <div class="flex items-center gap-6 text-xs text-sub/60 mt-1 mb-10">
+        <span class="flex items-center gap-2"><span class="inline-block w-4 h-1 rounded-full" style="background: rgb(var(--c-main))"></span> wpm</span>
+        <span class="flex items-center gap-2"><span class="inline-block w-4 h-1 rounded-full" style="background: rgb(var(--c-sub))"></span> raw</span>
+        <span class="flex items-center gap-2"><span class="inline-block w-2.5 h-2.5 rounded-full" style="background: rgb(var(--c-error))"></span> errors</span>
+      </div>
+
+      <!-- actions -->
+      <div class="flex flex-wrap items-center gap-3 mb-12">
+        <button id="nextBtn"
+          class="px-7 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">
+          next test
+        </button>
+        <button id="repeatBtn"
+          class="px-7 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">
+          repeat
+        </button>
+        <span class="text-xs text-sub/50 ml-2">press <span class="text-sub">tab</span> / <span class="text-sub">enter</span></span>
+      </div>
+
+      <!-- word review -->
+      <div class="text-[11px] uppercase tracking-[0.2em] text-sub/60 mb-3">words practiced</div>
+      <div id="breakdown"
+        class="max-h-[40vh] overflow-y-auto border border-line/50 rounded-xl divide-y divide-line/40 bg-panel/30"></div>
+    </div>
+  </section>
+
+  <!-- =====================  SETTINGS PANEL  ===================== -->
+  <div id="settingsOverlay"
+    class="fixed inset-0 z-40 bg-black/50 opacity-0 pointer-events-none transition-opacity duration-200"></div>
+
+  <aside id="settingsPanel"
+    class="fixed top-0 right-0 h-full w-full sm:w-[440px] z-50 bg-bg border-l border-line
+           translate-x-full transition-transform duration-200 ease-out flex flex-col">
+
+    <div class="flex items-center justify-between px-6 h-16 border-b border-line shrink-0">
+      <div class="text-sub text-sm uppercase tracking-[0.25em]">settings</div>
+      <button id="closeSettings" class="pill-btn text-lg leading-none" aria-label="Close settings">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"></path></svg>
+      </button>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-6 py-6 space-y-9">
+
+      <!-- theme -->
+      <section>
+        <div class="text-sub/60 text-xs uppercase tracking-wider mb-3">theme</div>
+        <div id="themeGrid" class="grid grid-cols-2 gap-2"></div>
+      </section>
+
+      <!-- words -->
+      <section>
+        <div class="text-sub/60 text-xs uppercase tracking-wider mb-3">words</div>
+        <div id="settingsWords" class="flex gap-2"></div>
+      </section>
+
+      <!-- word list -->
+      <section>
+        <div class="text-sub/60 text-xs uppercase tracking-wider mb-3">word list</div>
+        <div id="settingsTiers" class="flex flex-col gap-2"></div>
+      </section>
+
+      <!-- meaning -->
+      <section>
+        <div class="text-sub/60 text-xs uppercase tracking-wider mb-3">english meaning</div>
+        <div id="settingsMeaning" class="flex gap-2"></div>
+      </section>
+
+      <!-- input method -->
+      <section>
+        <div class="text-sub/60 text-xs uppercase tracking-wider mb-3">input method</div>
+        <div id="settingsInput" class="flex flex-col gap-2"></div>
+        <p class="text-sub/50 text-[11px] leading-relaxed mt-2">
+          Built-in Korean lets you type Hangul on an English keyboard (두벌식).
+        </p>
+      </section>
+
+      <!-- on-screen keyboard -->
+      <section>
+        <div class="text-sub/60 text-xs uppercase tracking-wider mb-3">on-screen keyboard</div>
+        <div id="settingsKbd" class="flex gap-2"></div>
+      </section>
+    </div>
+  </aside>
+
+  <!-- ================================================================= -->
+  <!--                           DATA                                     -->
+  <!-- ================================================================= -->
+  <script>
+  /* Tier 1 — Top 100 most common Korean words */
+  const SEG1 = [
+    ["나","I"],["너","you"],["우리","we, us"],["저","I (humble)"],["이것","this"],
+    ["그것","that"],["저것","that (over there)"],["여기","here"],["거기","there"],["저기","over there"],
+    ["사람","person"],["물","water"],["밥","rice, meal"],["집","house, home"],["학교","school"],
+    ["친구","friend"],["시간","time"],["오늘","today"],["내일","tomorrow"],["어제","yesterday"],
+    ["아침","morning"],["저녁","evening"],["밤","night"],["이름","name"],["나라","country"],
+    ["말","word, speech"],["책","book"],["돈","money"],["일","work, day"],["곳","place"],
+    ["때","time, when"],["것","thing"],["수","number"],["잘","well"],["아주","very"],
+    ["많이","a lot"],["조금","a little"],["정말","really"],["다시","again"],["지금","now"],
+    ["언제","when"],["어디","where"],["누구","who"],["무엇","what"],["왜","why"],
+    ["어떻게","how"],["몇","how many"],["하다","to do"],["있다","to have, exist"],["없다","to not have"],
+    ["이다","to be"],["아니다","to not be"],["가다","to go"],["오다","to come"],["보다","to see"],
+    ["먹다","to eat"],["마시다","to drink"],["주다","to give"],["받다","to receive"],["사다","to buy"],
+    ["팔다","to sell"],["좋다","to be good"],["싫다","to dislike"],["크다","to be big"],["작다","to be small"],
+    ["많다","to be many"],["적다","to be few"],["높다","to be high"],["낮다","to be low"],["살다","to live"],
+    ["죽다","to die"],["알다","to know"],["모르다","to not know"],["만나다","to meet"],["기다리다","to wait"],
+    ["말하다","to speak"],["듣다","to listen"],["읽다","to read"],["쓰다","to write, use"],["배우다","to learn"],
+    ["가르치다","to teach"],["일하다","to work"],["자다","to sleep"],["걷다","to walk"],["뛰다","to run"],
+    ["웃다","to laugh"],["울다","to cry"],["사랑","love"],["마음","heart, mind"],["몸","body"],
+    ["머리","head"],["눈","eye, snow"],["코","nose"],["입","mouth"],["손","hand"],
+    ["발","foot"],["얼굴","face"],["어머니","mother"],["아버지","father"],["부모","parents"]
+  ];
+
+  /* Tier 2 — next 100 common words */
+  const SEG2 = [
+    ["아들","son"],["딸","daughter"],["형","older brother (m.)"],["오빠","older brother (f.)"],["누나","older sister (m.)"],
+    ["언니","older sister (f.)"],["동생","younger sibling"],["아내","wife"],["남편","husband"],["아기","baby"],
+    ["아이","child"],["남자","man"],["여자","woman"],["학생","student"],["선생님","teacher"],
+    ["의사","doctor"],["회사","company"],["사장","boss, president"],["직원","employee"],["가게","shop"],
+    ["시장","market"],["병원","hospital"],["은행","bank"],["공원","park"],["길","road, street"],
+    ["차","car, tea"],["비행기","airplane"],["기차","train"],["버스","bus"],["지하철","subway"],
+    ["자전거","bicycle"],["음식","food"],["과일","fruit"],["야채","vegetable"],["고기","meat"],
+    ["생선","fish"],["빵","bread"],["우유","milk"],["커피","coffee"],["사과","apple"],
+    ["바나나","banana"],["딸기","strawberry"],["포도","grape"],["수박","watermelon"],["계란","egg"],
+    ["국","soup"],["김치","kimchi"],["국수","noodles"],["값","price"],["시계","clock, watch"],
+    ["전화","telephone"],["컴퓨터","computer"],["핸드폰","cell phone"],["텔레비전","television"],["사진","photo"],
+    ["영화","movie"],["음악","music"],["노래","song"],["춤","dance"],["그림","picture"],
+    ["이야기","story"],["뉴스","news"],["신문","newspaper"],["편지","letter"],["질문","question"],
+    ["대답","answer"],["숙제","homework"],["시험","exam"],["공부","study"],["회의","meeting"],
+    ["약속","promise, appointment"],["계획","plan"],["문제","problem"],["날씨","weather"],["비","rain"],
+    ["바람","wind"],["하늘","sky"],["바다","sea"],["산","mountain"],["강","river"],
+    ["나무","tree"],["꽃","flower"],["풀","grass"],["돌","stone"],["흙","soil"],
+    ["불","fire"],["공기","air"],["해","sun, year"],["달","moon, month"],["별","star"],
+    ["구름","cloud"],["봄","spring"],["여름","summer"],["가을","autumn"],["겨울","winter"],
+    ["주말","weekend"],["생일","birthday"],["나이","age"],["색","color"],["계절","season"]
+  ];
+
+  /* Tier 3 — 300 more (TOPIK level 1 range) */
+  const SEG3 = [
+    ["하나","one"],["둘","two"],["셋","three"],["넷","four"],["다섯","five"],
+    ["여섯","six"],["일곱","seven"],["여덟","eight"],["아홉","nine"],["열","ten"],
+    ["스물","twenty"],["백","hundred"],["천","thousand"],["만","ten thousand"],["미터","meter"],
+    ["킬로","kilometer"],["그램","gram"],["리터","liter"],["개","counter: items"],["명","counter: people"],
+    ["마리","counter: animals"],["잔","counter: cups"],["병","counter: bottles"],["권","counter: books"],["층","floor, story"],
+    ["번","number, time"],["첫","first"],["마지막","last"],["반","half"],["전부","all"],
+
+    ["빨강","red"],["파랑","blue"],["노랑","yellow"],["초록","green"],["검정","black"],
+    ["하양","white"],["주황","orange"],["보라","purple"],["분홍","pink"],["갈색","brown"],
+    ["회색","grey"],["색깔","colour"],
+
+    ["시","hour, o'clock"],["분","minute"],["초","second"],["월","month"],["년","year"],
+    ["주","week"],["낮","daytime"],["새벽","dawn"],["오전","morning (AM)"],["오후","afternoon (PM)"],
+    ["방학","school vacation"],["휴가","vacation"],["동안","during"],["항상","always"],["자주","often"],
+    ["가끔","sometimes"],["나중에","later"],["먼저","first, before"],
+
+    ["방","room"],["문","door"],["창문","window"],["벽","wall"],["바닥","floor"],
+    ["부엌","kitchen"],["화장실","bathroom"],["침대","bed"],["책상","desk"],["의자","chair"],
+    ["식탁","dining table"],["옷장","wardrobe"],["냉장고","refrigerator"],["세탁기","washing machine"],["에어컨","air conditioner"],
+    ["옷","clothes"],["신발","shoes"],["양말","socks"],["모자","hat"],["안경","glasses"],
+    ["가방","bag"],["지갑","wallet"],["우산","umbrella"],["열쇠","key"],["컵","cup"],
+    ["접시","plate"],["숟가락","spoon"],["젓가락","chopsticks"],["칼","knife"],["가위","scissors"],
+    ["연필","pencil"],["펜","pen"],["종이","paper"],["상자","box"],["거울","mirror"],
+
+    ["가족","family"],["친척","relative"],["이웃","neighbour"],["손님","guest"],["아저씨","middle-aged man"],
+    ["아주머니","middle-aged woman"],["청년","young man"],["소녀","girl"],["어른","adult"],["노인","elderly person"],
+    ["왕","king"],["국민","citizen"],["세계","world"],["사회","society"],["문화","culture"],
+    ["역사","history"],["언어","language"],["국가","nation"],["도시","city"],["시골","countryside"],
+
+    ["좋아하다","to like"],["싫어하다","to dislike"],["원하다","to want"],["필요하다","to be needed"],["생각하다","to think"],
+    ["느끼다","to feel"],["찾다","to find, look for"],["잃다","to lose"],["가지다","to have, hold"],["두다","to put, place"],
+    ["놓다","to put down"],["넣다","to put in"],["빼다","to take out"],["열다","to open"],["닫다","to close"],
+    ["켜다","to turn on"],["끄다","to turn off"],["만들다","to make"],["고치다","to fix"],["사용하다","to use"],
+    ["시작하다","to start"],["끝나다","to end"],["끝내다","to finish"],["계속하다","to continue"],["멈추다","to stop"],
+    ["서다","to stand"],["앉다","to sit"],["눕다","to lie down"],["일어나다","to get up"],["들어가다","to go in"],
+    ["나가다","to go out"],["들어오다","to come in"],["나오다","to come out"],["올라가다","to go up"],["내려가다","to go down"],
+    ["건너다","to cross"],["돌아가다","to go back"],["돌아오다","to come back"],["지나가다","to pass by"],["도착하다","to arrive"],
+    ["출발하다","to depart"],["떠나다","to leave"],["남다","to remain"],["이사하다","to move house"],["전화하다","to call"],
+    ["물어보다","to ask"],["대답하다","to answer"],["소개하다","to introduce"],["초대하다","to invite"],["방문하다","to visit"],
+    ["도와주다","to help"],["부탁하다","to request"],["약속하다","to promise"],["결혼하다","to marry"],["태어나다","to be born"],
+    ["자라다","to grow"],["다니다","to attend"],["졸업하다","to graduate"],["입학하다","to enrol"],["연습하다","to practice"],
+
+    ["피곤하다","to be tired"],["바쁘다","to be busy"],["한가하다","to be free"],["즐겁다","to be joyful"],["슬프다","to be sad"],
+    ["기쁘다","to be glad"],["무섭다","to be scary"],["재미있다","to be fun"],["지루하다","to be boring"],["쉽다","to be easy"],
+    ["어렵다","to be difficult"],["빠르다","to be fast"],["느리다","to be slow"],["덥다","to be hot"],["춥다","to be cold"],
+    ["따뜻하다","to be warm"],["시원하다","to be cool"],["차갑다","to be cold to touch"],["맑다","to be clear"],["흐리다","to be cloudy"],
+    ["비싸다","to be expensive"],["싸다","to be cheap"],["짧다","to be short"],["길다","to be long"],["무겁다","to be heavy"],
+    ["가볍다","to be light"],["깨끗하다","to be clean"],["더럽다","to be dirty"],["조용하다","to be quiet"],["시끄럽다","to be noisy"],
+    ["밝다","to be bright"],["어둡다","to be dark"],["새롭다","to be new"],["예쁘다","to be pretty"],["아름답다","to be beautiful"],
+    ["멋있다","to be stylish"],["귀엽다","to be cute"],["착하다","to be kind-hearted"],["친절하다","to be kind"],["똑똑하다","to be smart"],
+    ["게으르다","to be lazy"],["부지런하다","to be diligent"],["건강하다","to be healthy"],["아프다","to be sick"],["다르다","to be different"],
+    ["같다","to be the same"],["비슷하다","to be similar"],["중요하다","to be important"],["충분하다","to be enough"],["필요없다","to be unnecessary"],
+
+    ["교실","classroom"],["교과서","textbook"],["공책","notebook"],["성적","grade"],["대학","university"],
+    ["전공","major"],["학기","semester"],["과목","subject"],["수업","class"],["강의","lecture"],
+    ["도서관","library"],["과학","science"],["수학","mathematics"],["영어","English"],["한국어","Korean language"],
+    ["단어","word"],["문장","sentence"],["발음","pronunciation"],["연습","practice"],["취미","hobby"],
+    ["관심","interest"],["여행","travel"],["운동","exercise"],["수영","swimming"],["축구","soccer"],
+    ["야구","baseball"],["농구","basketball"],["등산","hiking"],["산책","a walk, stroll"],["영화관","cinema"],
+    ["식당","restaurant"],["카페","cafe"],["백화점","department store"],["편의점","convenience store"],
+
+    ["라면","ramen"],["만두","dumpling"],["떡","rice cake"],["죽","porridge"],["주스","juice"],
+    ["술","alcohol"],["맥주","beer"],["소주","soju"],["닭고기","chicken meat"],["소고기","beef"],
+    ["돼지고기","pork"],["채소","vegetables"],["양파","onion"],["마늘","garlic"],["고추","chili pepper"],
+    ["당근","carrot"],["감자","potato"],["오이","cucumber"],["토마토","tomato"],["버섯","mushroom"],
+    ["두부","tofu"],["소금","salt"],["설탕","sugar"],["기름","oil"],["꿀","honey"],
+
+    ["개","dog"],["고양이","cat"],["소","cow"],["말","horse"],["돼지","pig"],
+    ["닭","chicken"],["물고기","fish"],["호랑이","tiger"],["곰","bear"],["토끼","rabbit"],
+    ["쥐","mouse"],["코끼리","elephant"],["사자","lion"],["원숭이","monkey"],["뱀","snake"],
+
+    ["꿈","dream"]
+  ];
+  </script>
+
+  <!-- ================================================================= -->
+  <!--                            APP                                     -->
+  <!-- ================================================================= -->
+  <script>
+  (function () {
+    'use strict';
+
+    const TIERS = {
+      '100': { label: 'Top 100',  words: SEG1 },
+      '200': { label: 'Top 200',  words: SEG1.concat(SEG2) },
+      '500': { label: 'TOPIK 1',  words: SEG1.concat(SEG2, SEG3) },
+    };
+
+    const $ = (id) => document.getElementById(id);
+
+    /* ---- themes (Monkeytype) ---- */
+    /* THEMES:BEGIN */
+    const THEMES = {
+      default_dark: { bg:"#121212", main:"#e2b714", caret:"#e2b714", sub:"#64646b", subAlt:"#1a1a1a", text:"#d1d0c5", error:"#ca4754", errorExtra:"#7e2a33" },
+      "8008": { bg:"#333a45", main:"#f44c7f", caret:"#f44c7f", sub:"#939eae", subAlt:"#2e343d", text:"#e9ecf0", error:"#da3333", errorExtra:"#791717" },
+      "9009": { bg:"#eeebe2", main:"#080909", caret:"#7fa480", sub:"#99947f", subAlt:"#d3cfc1", text:"#080909", error:"#c87e74", errorExtra:"#a56961" },
+      "80s_after_dark": { bg:"#1b1d36", main:"#fca6d1", caret:"#99d6ea", sub:"#99d6ea", subAlt:"#17182c", text:"#e1e7ec", error:"#fffb85", errorExtra:"#fffb85" },
+      "aether": { bg:"#101820", main:"#eedaea", caret:"#eedaea", sub:"#cf6bdd", subAlt:"#292136", text:"#eedaea", error:"#ff5253", errorExtra:"#e3002b" },
+      "alduin": { bg:"#1c1c1c", main:"#dfd7af", caret:"#e3e3e3", sub:"#444444", subAlt:"#242424", text:"#f5f3ed", error:"#af5f5f", errorExtra:"#4d2113" },
+      "alpine": { bg:"#6c687f", main:"#ffffff", caret:"#585568", sub:"#9994b8", subAlt:"#77738c", text:"#ffffff", error:"#e32b2b", errorExtra:"#a62626" },
+      "anti_hero": { bg:"#00002e", main:"#ffadad", caret:"#ffffff", sub:"#ff3d8b", subAlt:"#060548", text:"#f1deef", error:"#8fecff", errorExtra:"#558cab" },
+      "arch": { bg:"#0c0d11", main:"#7ebab5", caret:"#7ebab5", sub:"#454864", subAlt:"#171a25", text:"#f6f5f5", error:"#ff4754", errorExtra:"#b02a33" },
+      "aurora": { bg:"#011926", main:"#00e980", caret:"#00e980", sub:"#245c69", subAlt:"#000c13", text:"#fff", error:"#b94da1", errorExtra:"#9b3a76", anim:["#009fb4","#00e975","#00ffea","#00e975"] },
+      "beach": { bg:"#ffeead", main:"#96ceb4", caret:"#ffcc5c", sub:"#ffcc5c", subAlt:"#f7dc8f", text:"#5b7869", error:"#ff6f69", errorExtra:"#ff6f69" },
+      "bento": { bg:"#2d394d", main:"#ff7a90", caret:"#ff7a90", sub:"#4a768d", subAlt:"#263041", text:"#fffaf8", error:"#ee2a3a", errorExtra:"#f04040" },
+      "bingsu": { bg:"#b8a7aa", main:"#83616e", caret:"#ebe6ea", sub:"#48373d", subAlt:"#ab989e", text:"#ebe6ea", error:"#921341", errorExtra:"#640b2c" },
+      "bliss": { bg:"#262727", main:"#f0d3c9", caret:"#f0d3c9", sub:"#665957", subAlt:"#343231", text:"#fff", error:"#bd4141", errorExtra:"#883434" },
+      "blue_dolphin": { bg:"#003950", main:"#ffcefb", caret:"#00bcd4", sub:"#00e4ff", subAlt:"#014961", text:"#82eaff", error:"#ffbde6", errorExtra:"#ff8188" },
+      "blueberry_dark": { bg:"#212b42", main:"#add7ff", caret:"#962f7e", sub:"#5c7da5", subAlt:"#1b2334", text:"#91b4d5", error:"#df4576", errorExtra:"#d996ac" },
+      "blueberry_light": { bg:"#dae0f5", main:"#506477", caret:"#df4576", sub:"#92a4be", subAlt:"#c1c7df", text:"#678198", error:"#df4576", errorExtra:"#d996ac" },
+      "botanical": { bg:"#7b9c98", main:"#eaf1f3", caret:"#abc6c4", sub:"#495755", subAlt:"#72908d", text:"#eaf1f3", error:"#f6c9b4", errorExtra:"#f59a71" },
+      "bouquet": { bg:"#173f35", main:"#eaa09c", caret:"#eaa09c", sub:"#408e7b", subAlt:"#1f4e43", text:"#e9e0d2", error:"#d44729", errorExtra:"#8f2f19" },
+      "breeze": { bg:"#e8d5c4", main:"#7d67a9", caret:"#7d67a9", sub:"#3a98b9", subAlt:"#f6e6da", text:"#1b4c5e", error:"#7d67a9", errorExtra:"#9f3e6d" },
+      "bushido": { bg:"#242933", main:"#ec4c56", caret:"#ec4c56", sub:"#596172", subAlt:"#1c222d", text:"#f6f0e9", error:"#ec4c56", errorExtra:"#9b333a" },
+      "cafe": { bg:"#ceb18d", main:"#14120f", caret:"#14120f", sub:"#d4d2d1", subAlt:"#bba180", text:"#14120f", error:"#c82931", errorExtra:"#ac1823" },
+      "camping": { bg:"#faf1e4", main:"#618c56", caret:"#618c56", sub:"#c2b8aa", subAlt:"#e7dccb", text:"#3c403b", error:"#ad4f4e", errorExtra:"#7e3a39" },
+      "carbon": { bg:"#313131", main:"#f66e0d", caret:"#f66e0d", sub:"#616161", subAlt:"#2b2b2b", text:"#f5e6c8", error:"#e72d2d", errorExtra:"#7e2a33" },
+      "catppuccin": { bg:"#1e1e2e", main:"#cba6f7", caret:"#f2cdcd", sub:"#7f849c", subAlt:"#181825", text:"#cdd6f4", error:"#f38ba8", errorExtra:"#eba0ac" },
+      "chaos_theory": { bg:"#141221", main:"#fd77d7", caret:"#dde5ed", sub:"#676e8a", subAlt:"#1e1d2f", text:"#dde5ed", error:"#fd77d7", errorExtra:"#b03c47" },
+      "cheesecake": { bg:"#fdf0d5", main:"#8e2949", caret:"#892948", sub:"#d91c81", subAlt:"#f3e2bf", text:"#3a3335", error:"#5cf074", errorExtra:"#5cf074", anim:["#ff0090","#c11384","#832678","#44396c","#064c60","#44396c","#832678","#c11384"] },
+      "cherry_blossom": { bg:"#323437", main:"#d65ccc", caret:"#ffffff", sub:"#787d82", subAlt:"#2d2f31", text:"#d1d0c5", error:"#ca4754", errorExtra:"#d32738" },
+      "comfy": { bg:"#4a5b6e", main:"#f8cdc6", caret:"#9ec1cc", sub:"#9ec1cc", subAlt:"#425366", text:"#f5efee", error:"#c9465e", errorExtra:"#c9465e" },
+      "copper": { bg:"#442f29", main:"#b46a55", caret:"#c25c42", sub:"#7ebab5", subAlt:"#50362e", text:"#e7e0de", error:"#a32424", errorExtra:"#ec0909" },
+      "creamsicle": { bg:"#ff9869", main:"#fcfcf8", caret:"#fcfcf8", sub:"#ff661f", subAlt:"#fe8954", text:"#fcfcf8", error:"#6a0dad", errorExtra:"#6a0dad" },
+      "cy_red": { bg:"#6e2626", main:"#e55050", caret:"#541d1d", sub:"#ff6060", subAlt:"#3f1616", text:"#ffaaaa", error:"#919fd9", errorExtra:"#4d5d9e" },
+      "cyberspace": { bg:"#181c18", main:"#00ce7c", caret:"#00ce7c", sub:"#9578d3", subAlt:"#131613", text:"#c2fbe1", error:"#ff5f5f", errorExtra:"#d22a2a" },
+      "dark": { bg:"#111", main:"#eee", caret:"#eee", sub:"#444", subAlt:"#191919", text:"#eee", error:"#da3333", errorExtra:"#791717" },
+      "dark_magic_girl": { bg:"#091f2c", main:"#f5b1cc", caret:"#a288d9", sub:"#93e8d3", subAlt:"#071823", text:"#a288d9", error:"#e45c96", errorExtra:"#e45c96" },
+      "dark_note": { bg:"#1f1f1f", main:"#f2c17b", caret:"#e3dce0", sub:"#768f95", subAlt:"#141414", text:"#d2dff4", error:"#ff0000", errorExtra:"#588498" },
+      "darling": { bg:"#fec8cd", main:"#ffffff", caret:"#ffffff", sub:"#a30000", subAlt:"#f2babd", text:"#ffffff", error:"#2e7dde", errorExtra:"#2e7dde" },
+      "deku": { bg:"#058b8c", main:"#b63530", caret:"#b63530", sub:"#255458", subAlt:"#0e7d7e", text:"#f7f2ea", error:"#b63530", errorExtra:"#530e0e" },
+      "desert_oasis": { bg:"#fff2d5", main:"#d19d01", caret:"#3a87fe", sub:"#0061fe", subAlt:"#eddebc", text:"#332800", error:"#76bb40", errorExtra:"#4e7a27" },
+      "dev": { bg:"#1b2028", main:"#23a9d5", caret:"#4b5975", sub:"#4b5975", subAlt:"#151a21", text:"#ccccb5", error:"#b81b2c", errorExtra:"#84131f" },
+      "diner": { bg:"#537997", main:"#c3af5b", caret:"#ad5145", sub:"#445c7f", subAlt:"#4d6f8b", text:"#dfdbc8", error:"#ad5145", errorExtra:"#7e2a33" },
+      "dino": { bg:"#ffffff", main:"#40d672", caret:"#40d672", sub:"#d5d5d5", subAlt:"#cafad8", text:"#1d221f", error:"#ff5f5f", errorExtra:"#d22a2a" },
+      "discord": { bg:"#313338", main:"#5a65ea", caret:"#5a65ea", sub:"#565861", subAlt:"#2b2d31", text:"#dcdee3", error:"#df4f4b", errorExtra:"#df4f4b" },
+      "dmg": { bg:"#dadbdc", main:"#ae185e", caret:"#384693", sub:"#3846b1", subAlt:"#bec1d2", text:"#414141", error:"#ae185e", errorExtra:"#93335c" },
+      "dollar": { bg:"#e4e4d4", main:"#6b886b", caret:"#424643", sub:"#8a9b69", subAlt:"#cbd0bf", text:"#555a56", error:"#d60000", errorExtra:"#f68484" },
+      "dots": { bg:"#121520", main:"#fff", caret:"#fff", sub:"#676e8a", subAlt:"#1b1e2c", text:"#fff", error:"#da3333", errorExtra:"#791717" },
+      "dracula": { bg:"#282a36", main:"#bd93f9", caret:"#bd93f9", sub:"#6272a4", subAlt:"#20222c", text:"#f8f8f2", error:"#ff5555", errorExtra:"#f1fa8c" },
+      "drowning": { bg:"#191826", main:"#4a6fb5", caret:"#4f85e8", sub:"#50688c", subAlt:"#1e1f2f", text:"#9393a7", error:"#be555f", errorExtra:"#7e2a33" },
+      "dualshot": { bg:"#737373", main:"#212222", caret:"#212222", sub:"#aaaaaa", subAlt:"#646464", text:"#212222", error:"#c82931", errorExtra:"#ac1823" },
+      "earthsong": { bg:"#292521", main:"#509452", caret:"#1298ba", sub:"#f5ae2d", subAlt:"#1d1b18", text:"#e6c7a8", error:"#7e2a33", errorExtra:"#ff645a" },
+      "everblush": { bg:"#141b1e", main:"#8ccf7e", caret:"#6cbfbf", sub:"#838887", subAlt:"#232a2d", text:"#dadada", error:"#e57474", errorExtra:"#ef7e7e" },
+      "evil_eye": { bg:"#0084c2", main:"#f7f2ea", caret:"#f7f2ea", sub:"#01589f", subAlt:"#0c79be", text:"#171718", error:"#ca4754", errorExtra:"#7e2a33" },
+      "ez_mode": { bg:"#0068c6", main:"#fa62d5", caret:"#4ddb47", sub:"#138bf7", subAlt:"#005bac", text:"#ffffff", error:"#4ddb47", errorExtra:"#42ba3b" },
+      "fire": { bg:"#0f0000", main:"#b31313", caret:"#b31313", sub:"#683434", subAlt:"#200a0a", text:"#ffffff", error:"#2f3cb6", errorExtra:"#434a8f", anim:["#b31313","#ff9000","#fdda16","#ff9000"] },
+      "fledgling": { bg:"#3b363f", main:"#fc6e83", caret:"#474747", sub:"#8e5568", subAlt:"#332e38", text:"#e6d5d3", error:"#f52443", errorExtra:"#bd001c" },
+      "fleuriste": { bg:"#c6b294", main:"#405a52", caret:"#8a785b", sub:"#64374d", subAlt:"#b4a389", text:"#091914", error:"#990000", errorExtra:"#8a1414" },
+      "floret": { bg:"#00272c", main:"#ffdd6d", caret:"#c3bd40", sub:"#779097", subAlt:"#173033", text:"#e5e5e5", error:"#8a4000", errorExtra:"#00708d" },
+      "froyo": { bg:"#e1dacb", main:"#7b7d7d", caret:"#7b7d7d", sub:"#b29c5e", subAlt:"#d3cdc1", text:"#7b7d7d", error:"#f28578", errorExtra:"#d56558" },
+      "frozen_llama": { bg:"#9bf2ea", main:"#6d44a6", caret:"#ffffff", sub:"#b690fd", subAlt:"#7fe7dd", text:"#ffffff", error:"#e42629", errorExtra:"#e42629" },
+      "fruit_chew": { bg:"#d6d3d6", main:"#5c1e5f", caret:"#b92221", sub:"#b49cb5", subAlt:"#cabfca", text:"#282528", error:"#bd2621", errorExtra:"#a62626" },
+      "fundamentals": { bg:"#727474", main:"#7fa482", caret:"#196378", sub:"#cac4be", subAlt:"#666868", text:"#131313", error:"#5e477c", errorExtra:"#413157" },
+      "future_funk": { bg:"#2e1a47", main:"#f7f2ea", caret:"#f7f2ea", sub:"#c18fff", subAlt:"#27173c", text:"#f7f2ea", error:"#f04e98", errorExtra:"#bd1c66" },
+      "github": { bg:"#212830", main:"#41ce5c", caret:"#41ce5c", sub:"#788386", subAlt:"#141b23", text:"#ccdae6", error:"#c23e3a", errorExtra:"#c23e3a" },
+      "godspeed": { bg:"#eae4cf", main:"#9abbcd", caret:"#f4d476", sub:"#ada998", subAlt:"#ded9c9", text:"#646669", error:"#ca4754", errorExtra:"#7e2a33" },
+      "graen": { bg:"#303c36", main:"#a59682", caret:"#601420", sub:"#181d1a", subAlt:"#36453c", text:"#a59682", error:"#601420", errorExtra:"#5f0715" },
+      "grand_prix": { bg:"#36475c", main:"#c0d036", caret:"#c0d036", sub:"#5c6c80", subAlt:"#42536b", text:"#c1c7d7", error:"#fc5727", errorExtra:"#fc5727" },
+      "grape": { bg:"#2c003e", main:"#ff8f00", caret:"#ff8f00", sub:"#6e225e", subAlt:"#1f002d", text:"#fff", error:"#ff4081", errorExtra:"#bf2054", anim:["#00b8d4","#ffac41","#ffcc80","#ffac41"] },
+      "gruvbox_dark": { bg:"#282828", main:"#d79921", caret:"#fabd2f", sub:"#665c54", subAlt:"#212121", text:"#ebdbb2", error:"#fb4934", errorExtra:"#cc241d" },
+      "gruvbox_light": { bg:"#fbf1c7", main:"#689d6a", caret:"#689d6a", sub:"#a89984", subAlt:"#daceae", text:"#3c3836", error:"#cc241d", errorExtra:"#9d0006" },
+      "hammerhead": { bg:"#030613", main:"#4fcdb9", caret:"#4fcdb9", sub:"#213c53", subAlt:"#0a1928", text:"#e2f1f5", error:"#e32b2b", errorExtra:"#a62626" },
+      "hanok": { bg:"#d8d2c3", main:"#513a2a", caret:"#513a2a", sub:"#8b6f5c", subAlt:"#cdc0af", text:"#393b3b", error:"#ca4754", errorExtra:"#7e2a33" },
+      "hedge": { bg:"#415e31", main:"#6a994e", caret:"#f2efbb", sub:"#ede5b4", subAlt:"#38502a", text:"#f7f1d6", error:"#ca3d3f", errorExtra:"#782832" },
+      "honey": { bg:"#f2aa00", main:"#fff546", caret:"#795200", sub:"#a66b00", subAlt:"#e19e00", text:"#f3eecb", error:"#df3333", errorExtra:"#6d1f1f" },
+      "horizon": { bg:"#1c1e26", main:"#c4a88a", caret:"#bbbbbb", sub:"#db886f", subAlt:"#17181f", text:"#bbbbbb", error:"#d55170", errorExtra:"#ff3d3d" },
+      "husqy": { bg:"#000000", main:"#c58aff", caret:"#c58aff", sub:"#972fff", subAlt:"#1e001e", text:"#ebd7ff", error:"#da3333", errorExtra:"#791717" },
+      "iceberg_dark": { bg:"#161821", main:"#84a0c6", caret:"#d2d4de", sub:"#595e76", subAlt:"#232531", text:"#c6c8d1", error:"#e27878", errorExtra:"#e2a478" },
+      "iceberg_light": { bg:"#e8e9ec", main:"#2d539e", caret:"#262a3f", sub:"#adb1c4", subAlt:"#ccceda", text:"#33374c", error:"#cc517a", errorExtra:"#cc3768" },
+      "incognito": { bg:"#0e0e0e", main:"#ff9900", caret:"#ff9900", sub:"#555555", subAlt:"#151515", text:"#c6c6c6", error:"#e44545", errorExtra:"#e44545" },
+      "ishtar": { bg:"#202020", main:"#91170c", caret:"#c58940", sub:"#847869", subAlt:"#272727", text:"#fae1c3", error:"#bb1e10", errorExtra:"#791717" },
+      "iv_clover": { bg:"#a0a0a0", main:"#573e40", caret:"#8d8d8d", sub:"#353535", subAlt:"#bebebe", text:"#3b2d3b", error:"#937173", errorExtra:"#987678" },
+      "iv_spade": { bg:"#0c0c0c", main:"#b7976a", caret:"#bebebe", sub:"#404040", subAlt:"#121212", text:"#d3c2c3", error:"#9d7b7d", errorExtra:"#a78587" },
+      "joker": { bg:"#1a0e25", main:"#99de1e", caret:"#99de1e", sub:"#7554a3", subAlt:"#14081f", text:"#e9e2f5", error:"#e32b2b", errorExtra:"#a62626" },
+      "laser": { bg:"#221b44", main:"#009eaf", caret:"#009eaf", sub:"#b82356", subAlt:"#1e173b", text:"#dbe7e8", error:"#a8d400", errorExtra:"#668000" },
+      "lavender": { bg:"#ada6c2", main:"#e4e3e9", caret:"#e4e3e9", sub:"#e4e3e9", subAlt:"#a19bb9", text:"#2f2a41", error:"#ca4754", errorExtra:"#7e2a33" },
+      "leather": { bg:"#a86948", main:"#ffe4bc", caret:"#ef6d49", sub:"#81482b", subAlt:"#9a5f3f", text:"#ffe4bc", error:"#ca4754", errorExtra:"#7e2a33" },
+      "lil_dragon": { bg:"#ebe1ef", main:"#8a5bd6", caret:"#212b43", sub:"#a28db8", subAlt:"#dac7e2", text:"#212b43", error:"#f794ca", errorExtra:"#f279c2" },
+      "lilac_mist": { bg:"#fffbfe", main:"#b94189", caret:"#e099d6", sub:"#e094c2", subAlt:"#ecdcee", text:"#5c2954", error:"#ff6f69", errorExtra:"#ff6f69" },
+      "lime": { bg:"#7c878e", main:"#93c247", caret:"#93c247", sub:"#4b5257", subAlt:"#737d82", text:"#bfcfdc", error:"#ea4221", errorExtra:"#7e2a33" },
+      "luna": { bg:"#221c35", main:"#f67599", caret:"#f67599", sub:"#5a3a7e", subAlt:"#2f2346", text:"#ffe3eb", error:"#efc050", errorExtra:"#c5972c" },
+      "macroblank": { bg:"#b2d2c8", main:"#c13117", caret:"#766f71", sub:"#717977", subAlt:"#c6ddd3", text:"#490909", error:"#c13117", errorExtra:"#fff5f5" },
+      "magic_girl": { bg:"#ffffff", main:"#f5b1cc", caret:"#e45c96", sub:"#93e8d3", subAlt:"#f2f2f2", text:"#00ac8c", error:"#ffe495", errorExtra:"#e45c96" },
+      "mashu": { bg:"#2b2b2c", main:"#76689a", caret:"#76689a", sub:"#d8a0a6", subAlt:"#27242c", text:"#f1e2e4", error:"#d44729", errorExtra:"#8f2f19" },
+      "matcha_moccha": { bg:"#523525", main:"#7ec160", caret:"#7ec160", sub:"#9e6749", subAlt:"#422b1e", text:"#ecddcc", error:"#fb4934", errorExtra:"#cc241d" },
+      "material": { bg:"#263238", main:"#80cbc4", caret:"#80cbc4", sub:"#4c6772", subAlt:"#2e3c43", text:"#e6edf3", error:"#fb4934", errorExtra:"#cc241d" },
+      "matrix": { bg:"#000000", main:"#15ff00", caret:"#15ff00", sub:"#006500", subAlt:"#032000", text:"#d1ffcd", error:"#da3333", errorExtra:"#791717" },
+      "menthol": { bg:"#00c18c", main:"#ffffff", caret:"#99fdd8", sub:"#186544", subAlt:"#17ae7d", text:"#ffffff", error:"#e03c3c", errorExtra:"#b12525" },
+      "metaverse": { bg:"#232323", main:"#d82934", caret:"#d82934", sub:"#5e5e5e", subAlt:"#1d1d1d", text:"#e8e8e8", error:"#da3333", errorExtra:"#791717" },
+      "metropolis": { bg:"#0f1f2c", main:"#56c3b7", caret:"#56c3b7", sub:"#326984", subAlt:"#0b1822", text:"#e4edf1", error:"#d44729", errorExtra:"#8f2f19" },
+      "mexican": { bg:"#f8ad34", main:"#b12189", caret:"#eee", sub:"#333", subAlt:"#f9b951", text:"#eee", error:"#da3333", errorExtra:"#791717" },
+      "miami": { bg:"#f35588", main:"#05dfd7", caret:"#a3f7bf", sub:"#94294c", subAlt:"#db4979", text:"#f0e9ec", error:"#fff591", errorExtra:"#b9b269" },
+      "miami_nights": { bg:"#18181a", main:"#e4609b", caret:"#e4609b", sub:"#47bac0", subAlt:"#0f0f10", text:"#fff", error:"#fff591", errorExtra:"#b6af68" },
+      "midnight": { bg:"#0b0e13", main:"#60759f", caret:"#60759f", sub:"#394760", subAlt:"#141a24", text:"#9fadc6", error:"#c27070", errorExtra:"#c28b70" },
+      "milkshake": { bg:"#ffffff", main:"#212b43", caret:"#212b43", sub:"#62cfe6", subAlt:"#ddeff3", text:"#212b43", error:"#f19dac", errorExtra:"#e58c9d" },
+      "mint": { bg:"#05385b", main:"#5cdb95", caret:"#5cdb95", sub:"#20688a", subAlt:"#07324e", text:"#edf5e1", error:"#f35588", errorExtra:"#a3385a" },
+      "mizu": { bg:"#afcbdd", main:"#fcfbf6", caret:"#fcfbf6", sub:"#85a5bb", subAlt:"#9fc1d4", text:"#1a2633", error:"#bf616a", errorExtra:"#793e44" },
+      "modern_dolch": { bg:"#2d2e30", main:"#7eddd3", caret:"#7eddd3", sub:"#54585c", subAlt:"#242527", text:"#e3e6eb", error:"#d36a7b", errorExtra:"#994154" },
+      "modern_dolch_light": { bg:"#dbdbdb", main:"#8fd1c3", caret:"#8fd1c3", sub:"#a3a2a2", subAlt:"#e8e8e8", text:"#454545", error:"#ea8a9a", errorExtra:"#e0556d" },
+      "modern_ink": { bg:"#ffffff", main:"#ff360d", caret:"#ff0000", sub:"#b7b7b7", subAlt:"#ececec", text:"#000000", error:"#d70000", errorExtra:"#b00000" },
+      "monokai": { bg:"#272822", main:"#a6e22e", caret:"#66d9ef", sub:"#e6db74", subAlt:"#1f201b", text:"#e2e2dc", error:"#f92672", errorExtra:"#fd971f" },
+      "moonlight": { bg:"#191f28", main:"#c69f68", caret:"#8f744b", sub:"#4b5975", subAlt:"#141a22", text:"#ccccb5", error:"#b81b2c", errorExtra:"#84131f" },
+      "mountain": { bg:"#0f0f0f", main:"#e7e7e7", caret:"#f5f5f5", sub:"#4c4c4c", subAlt:"#1a1a1a", text:"#e7e7e7", error:"#ac8c8c", errorExtra:"#c49ea0" },
+      "mr_sleeves": { bg:"#d1d7da", main:"#daa99b", caret:"#8fadc9", sub:"#9a9fa1", subAlt:"#bfcbd1", text:"#1d1d1d", error:"#bf6464", errorExtra:"#793e44" },
+      "ms_cupcakes": { bg:"#ffffff", main:"#5ed5f3", caret:"#303030", sub:"#d64090", subAlt:"#edf8fa", text:"#0a282f", error:"#a4dd32", errorExtra:"#90bd34" },
+      "muted": { bg:"#525252", main:"#c5b4e3", caret:"#b1e4e3", sub:"#939eae", subAlt:"#494949", text:"#b1e4e3", error:"#edc1cd", errorExtra:"#edc1cd" },
+      "nautilus": { bg:"#132237", main:"#ebb723", caret:"#ebb723", sub:"#0b4c6c", subAlt:"#0e1a29", text:"#1cbaac", error:"#da3333", errorExtra:"#791717" },
+      "nebula": { bg:"#212135", main:"#be3c88", caret:"#78c729", sub:"#19b3b8", subAlt:"#191928", text:"#838686", error:"#ca4754", errorExtra:"#7e2a33" },
+      "night_runner": { bg:"#212121", main:"#feff04", caret:"#feff04", sub:"#5c4a9c", subAlt:"#1a1a1a", text:"#e8e8e8", error:"#da3333", errorExtra:"#791717" },
+      "nord": { bg:"#242933", main:"#88c0d0", caret:"#eceff4", sub:"#929aaa", subAlt:"#2e3440", text:"#d8dee9", error:"#bf616a", errorExtra:"#793e44" },
+      "nord_light": { bg:"#eceff4", main:"#8fbcbb", caret:"#8fbcbb", sub:"#6a7791", subAlt:"#d8dee9", text:"#8fbcbb", error:"#bf616a", errorExtra:"#793e44" },
+      "norse": { bg:"#242425", main:"#2b5f6d", caret:"#2b5f6d", sub:"#505b5e", subAlt:"#303333", text:"#ccc2b1", error:"#7e2a2a", errorExtra:"#771d1d" },
+      "oblivion": { bg:"#313231", main:"#a5a096", caret:"#a5a096", sub:"#5d6263", subAlt:"#3a3b3b", text:"#f7f5f1", error:"#dd452e", errorExtra:"#9e3423" },
+      "olive": { bg:"#e9e5cc", main:"#92946f", caret:"#92946f", sub:"#b7b39e", subAlt:"#d4cfbc", text:"#373731", error:"#cf2f2f", errorExtra:"#a22929" },
+      "olivia": { bg:"#1c1b1d", main:"#deaf9d", caret:"#deaf9d", sub:"#4e3e3e", subAlt:"#262223", text:"#f2efed", error:"#bf616a", errorExtra:"#793e44" },
+      "onedark": { bg:"#2f343f", main:"#61afef", caret:"#61afef", sub:"#eceff4", subAlt:"#262b34", text:"#98c379", error:"#e06c75", errorExtra:"#d62436" },
+      "our_theme": { bg:"#ce1226", main:"#fcd116", caret:"#fcd116", sub:"#6d0f19", subAlt:"#9f1020", text:"#ffffff", error:"#fcd116", errorExtra:"#fcd116" },
+      "pale_nimbus": { bg:"#433e4c", main:"#94ffc2", caret:"#9efffd", sub:"#ffaca3", subAlt:"#694f5e", text:"#feffdb", error:"#ff5c5c", errorExtra:"#ff0000" },
+      "paper": { bg:"#eeeeee", main:"#444444", caret:"#444444", sub:"#b2b2b2", subAlt:"#dddddd", text:"#444444", error:"#d70000", errorExtra:"#d70000" },
+      "passion_fruit": { bg:"#7c2142", main:"#f4a3b4", caret:"#ffffff", sub:"#9994b8", subAlt:"#833c5e", text:"#ffffff", error:"#deb80b", errorExtra:"#deb80b" },
+      "pastel": { bg:"#e0b2bd", main:"#fbf4b6", caret:"#fbf4b6", sub:"#b4e9ff", subAlt:"#d29fab", text:"#6d5c6f", error:"#ff6961", errorExtra:"#c23b22" },
+      "peach_blossom": { bg:"#292929", main:"#99b898", caret:"#616161", sub:"#616161", subAlt:"#2a363b", text:"#fecea8", error:"#ff6961", errorExtra:"#e84a5f" },
+      "peaches": { bg:"#e0d7c1", main:"#dd7a5f", caret:"#dd7a5f", sub:"#e7b28e", subAlt:"#e2caaf", text:"#5f4c41", error:"#ff6961", errorExtra:"#c23b22" },
+      "phantom": { bg:"#001", main:"#7aa2f7", caret:"#bb9af7", sub:"#414868", subAlt:"#24283b", text:"#c0caf5", error:"#f7768e", errorExtra:"#db4b4b", anim:["#7aa2f7","#bb9af7"] },
+      "pink_lemonade": { bg:"#f6d992", main:"#f6a192", caret:"#fcfcf8", sub:"#f6b092", subAlt:"#f6cc93", text:"#fcfcf8", error:"#ff6f69", errorExtra:"#ff6f69" },
+      "pulse": { bg:"#181818", main:"#17b8bd", caret:"#17b8bd", sub:"#53565a", subAlt:"#121212", text:"#e5f4f4", error:"#da3333", errorExtra:"#791717" },
+      "purpleish": { bg:"#1e1e32", main:"#7a52cc", caret:"#7a52cc", sub:"#5c5c99", subAlt:"#181829", text:"#a3a3cc", error:"#ff6666", errorExtra:"#ff6666" },
+      "rainbow_trail": { bg:"#f5f5f5", main:"#363636", caret:"#0d0d0d", sub:"#4f4f4f", subAlt:"#e0e0e0", text:"#1f1f1f", error:"#ff0008", errorExtra:"#ff0008", anim:["#60b6ce","#7ce3e1","#b2e259","#f6ee75","#f5b83d","#f49a98","#ed7abd","#dea2fa","#a966f5"] },
+      "red_dragon": { bg:"#1a0b0c", main:"#ff3a32", caret:"#ff3a32", sub:"#e2a528", subAlt:"#0e0506", text:"#4a4d4e", error:"#771b1f", errorExtra:"#591317" },
+      "red_samurai": { bg:"#84202c", main:"#c79e6e", caret:"#c79e6e", sub:"#55131b", subAlt:"#751d26", text:"#e2dad0", error:"#33bbda", errorExtra:"#176b79" },
+      "repose_dark": { bg:"#2f3338", main:"#d6d2bc", caret:"#d6d2bc", sub:"#8f8e84", subAlt:"#3a3c3d", text:"#d6d2bc", error:"#ff4a59", errorExtra:"#c43c53" },
+      "repose_light": { bg:"#efead0", main:"#5f605e", caret:"#5f605e", sub:"#8f8e84", subAlt:"#dbd6c4", text:"#333538", error:"#c43c53", errorExtra:"#a52632" },
+      "retro": { bg:"#dad3c1", main:"#1d1b17", caret:"#1d1b17", sub:"#918b7d", subAlt:"#c8c3b3", text:"#1d1b17", error:"#bf616a", errorExtra:"#793e44" },
+      "retrocast": { bg:"#07737a", main:"#88dbdf", caret:"#88dbdf", sub:"#f3e03b", subAlt:"#26858b", text:"#ffffff", error:"#ff585d", errorExtra:"#c04455" },
+      "rgb": { bg:"#111", main:"#eee", caret:"#eee", sub:"#444", subAlt:"#1a1a1a", text:"#eee", error:"#eee", errorExtra:"#b3b3b3", anim:["#4cae4c","#409eb5","#8134f4","#f10e19","#ffc505"] },
+      "rose_pine": { bg:"#1f1d27", main:"#9ccfd8", caret:"#f6c177", sub:"#c4a7e7", subAlt:"#282533", text:"#e0def4", error:"#eb6f92", errorExtra:"#ebbcba" },
+      "rose_pine_dawn": { bg:"#fffaf3", main:"#56949f", caret:"#ea9d34", sub:"#c4a7e7", subAlt:"#f0e9df", text:"#286983", error:"#b4637a", errorExtra:"#d7827e" },
+      "rose_pine_moon": { bg:"#2a273f", main:"#9ccfd8", caret:"#f6c177", sub:"#c4a7e7", subAlt:"#211f32", text:"#e0def4", error:"#eb6f92", errorExtra:"#ebbcba" },
+      "rudy": { bg:"#1a2b3e", main:"#af8f5c", caret:"#af8f5c", sub:"#3a506c", subAlt:"#152231", text:"#c9c8bf", error:"#bf616a", errorExtra:"#793e44" },
+      "ryujinscales": { bg:"#081426", main:"#f17754", caret:"#ef6d49", sub:"#ffbc90", subAlt:"#040e1d", text:"#ffe4bc", error:"#ca4754", errorExtra:"#7e2a33" },
+      "serika": { bg:"#e1e1e3", main:"#e2b714", caret:"#e2b714", sub:"#aaaeb3", subAlt:"#d1d3d8", text:"#323437", error:"#da3333", errorExtra:"#791717" },
+      "serika_dark": { bg:"#323437", main:"#e2b714", caret:"#e2b714", sub:"#646669", subAlt:"#2c2e31", text:"#d1d0c5", error:"#ca4754", errorExtra:"#7e2a33" },
+      "sewing_tin": { bg:"#241963", main:"#f2ce83", caret:"#fbdb8c", sub:"#446ad5", subAlt:"#2a277a", text:"#ffffff", error:"#c6915e", errorExtra:"#c6915e" },
+      "sewing_tin_light": { bg:"#ffffff", main:"#2d2076", caret:"#fbdb8c", sub:"#385eca", subAlt:"#c8cedf", text:"#2d2076", error:"#f2ce83", errorExtra:"#f2ce83" },
+      "shadow": { bg:"#000", main:"#eee", caret:"#eee", sub:"#444", subAlt:"#171717", text:"#eee", error:"#fff", errorExtra:"#d8d8d8", anim:["#000"] },
+      "shoko": { bg:"#ced7e0", main:"#81c4dd", caret:"#81c4dd", sub:"#7599b1", subAlt:"#b7cada", text:"#3b4c58", error:"#bf616a", errorExtra:"#793e44" },
+      "slambook": { bg:"#fffdde", main:"#03001c", caret:"#367e18", sub:"#1c82adc4", subAlt:"#c6dce4", text:"#13005a", error:"#f900bf", errorExtra:"#ce1212" },
+      "snes": { bg:"#bfbec2", main:"#553d94", caret:"#523793", sub:"#9f8ad4", subAlt:"#b5b0c2", text:"#2e2e2e", error:"#ca4754", errorExtra:"#7e2a33" },
+      "soaring_skies": { bg:"#fff9f2", main:"#55c6f0", caret:"#1e107a", sub:"#1e107a", subAlt:"#e5ddd4", text:"#1d1e1e", error:"#fb5745", errorExtra:"#b03c30" },
+      "solarized_dark": { bg:"#002b36", main:"#859900", caret:"#dc322f", sub:"#2aa198", subAlt:"#00222b", text:"#268bd2", error:"#d33682", errorExtra:"#9b225c" },
+      "solarized_light": { bg:"#fdf6e3", main:"#859900", caret:"#dc322f", sub:"#2aa198", subAlt:"#e2d8be", text:"#181819", error:"#d33682", errorExtra:"#9b225c" },
+      "solarized_osaka": { bg:"#00141a", main:"#859900", caret:"#b58900", sub:"#2aa198", subAlt:"#00222b", text:"#eee8d5", error:"#dc322f", errorExtra:"#9b225c" },
+      "sonokai": { bg:"#2c2e34", main:"#9ed072", caret:"#f38c71", sub:"#e7c664", subAlt:"#232429", text:"#e2e2e3", error:"#fc5d7c", errorExtra:"#ecac6a" },
+      "spiderman": { bg:"#0d1219", main:"#e23636", caret:"#e23636", sub:"#0476f2", subAlt:"#0b1c2e", text:"#f0f0f0", error:"#0476f2", errorExtra:"#0353a8" },
+      "stealth": { bg:"#010203", main:"#383e42", caret:"#e25303", sub:"#5e676e", subAlt:"#121212", text:"#383e42", error:"#e25303", errorExtra:"#73280c" },
+      "strawberry": { bg:"#f37f83", main:"#fcfcf8", caret:"#fcfcf8", sub:"#e53c58", subAlt:"#ef6e77", text:"#fcfcf8", error:"#fcd23f", errorExtra:"#d7ae1e" },
+      "striker": { bg:"#124883", main:"#d7dcda", caret:"#d7dcda", sub:"#0f2d4e", subAlt:"#104176", text:"#d6dbd9", error:"#fb4934", errorExtra:"#cc241d" },
+      "suisei": { bg:"#3b4a62", main:"#bef0ff", caret:"#bef0ff", sub:"#fe9841", subAlt:"#313e55", text:"#dbdeeb", error:"#ed2939", errorExtra:"#ce122c" },
+      "sunset": { bg:"#211e24", main:"#f79777", caret:"#ffca99", sub:"#5b578e", subAlt:"#161319", text:"#f4e0c9", error:"#66a1ff", errorExtra:"#376ca4" },
+      "superuser": { bg:"#262a33", main:"#43ffaf", caret:"#43ffaf", sub:"#526777", subAlt:"#1f232c", text:"#e5f7ef", error:"#ff5f5f", errorExtra:"#d22a2a" },
+      "sweden": { bg:"#0058a3", main:"#ffcc02", caret:"#b5b5b5", sub:"#57abdb", subAlt:"#024f8e", text:"#ffffff", error:"#e74040", errorExtra:"#a22f2f" },
+      "tangerine": { bg:"#ffede0", main:"#fe5503", caret:"#5d8500", sub:"#ff9562", subAlt:"#fdd3bf", text:"#3d1705", error:"#7fb500", errorExtra:"#5f8700" },
+      "taro": { bg:"#b3baff", main:"#130f1a", caret:"#00e9e5", sub:"#6f6c91", subAlt:"#a3a7df", text:"#130f1a", error:"#ffe23e", errorExtra:"#fff1c3" },
+      "terminal": { bg:"#191a1b", main:"#79a617", caret:"#79a617", sub:"#48494b", subAlt:"#141516", text:"#e7eae0", error:"#a61717", errorExtra:"#731010" },
+      "terra": { bg:"#0c100e", main:"#89c559", caret:"#89c559", sub:"#436029", subAlt:"#0f1d18", text:"#f0edd1", error:"#d3ca78", errorExtra:"#89844d" },
+      "terrazzo": { bg:"#f1e5da", main:"#e0794e", caret:"#e0794e", sub:"#688e8f", subAlt:"#e3d3c6", text:"#023e3b", error:"#a01034", errorExtra:"#a01034" },
+      "terror_below": { bg:"#0b1e1a", main:"#66ac92", caret:"#66ac92", sub:"#015c53", subAlt:"#041715", text:"#dceae5", error:"#bf616a", errorExtra:"#793e44" },
+      "tiramisu": { bg:"#cfc6b9", main:"#c0976f", caret:"#7d5448", sub:"#c0976f", subAlt:"#d0bca7", text:"#7d5448", error:"#e9632d", errorExtra:"#e9632d" },
+      "trackday": { bg:"#464d66", main:"#e0513e", caret:"#475782", sub:"#5c7eb9", subAlt:"#3d4359", text:"#cfcfcf", error:"#e44e4e", errorExtra:"#fd3f3f" },
+      "trance": { bg:"#00021b", main:"#e51376", caret:"#e51376", sub:"#3c4c79", subAlt:"#18214c", text:"#fff", error:"#02d3b0", errorExtra:"#3f887c", anim:["#e51376","#0e77ee"] },
+      "tron_orange": { bg:"#0d1c1c", main:"#f0e800", caret:"#f0e800", sub:"#ff6600", subAlt:"#9c9191", text:"#ffffff", error:"#ff0000", errorExtra:"#ff0000" },
+      "vaporwave": { bg:"#a4a7ea", main:"#e368da", caret:"#28cafe", sub:"#7c7faf", subAlt:"#989bd9", text:"#f1ebf1", error:"#573ca9", errorExtra:"#3d2b77" },
+      "vesper": { bg:"#101010", main:"#ffc799", caret:"#99ffe4", sub:"#a0a0a0", subAlt:"#1c1c1c", text:"#ffffff", error:"#ff8080", errorExtra:"#b25959" },
+      "vesper_light": { bg:"#ffffff", main:"#fb7100", caret:"#067a6e", sub:"#a0a0a0", subAlt:"#fff8f4", text:"#000000", error:"#ed2839", errorExtra:"#ff6c72" },
+      "viridescent": { bg:"#2c3333", main:"#95d5b2", caret:"#f0d3c9", sub:"#84a98c", subAlt:"#232828", text:"#e9f5db", error:"#ff4646", errorExtra:"#ab2f2f" },
+      "voc": { bg:"#190618", main:"#e0caac", caret:"#e0caac", sub:"#4c1e48", subAlt:"#2c0c28", text:"#eeeae4", error:"#af3735", errorExtra:"#7e2a29" },
+      "vscode": { bg:"#1e1e1e", main:"#007acc", caret:"#569cd6", sub:"#4d4d4d", subAlt:"#191919", text:"#d4d4d4", error:"#f44747", errorExtra:"#f44747" },
+      "watermelon": { bg:"#1f4437", main:"#d6686f", caret:"#d6686f", sub:"#3e7a65", subAlt:"#244d3f", text:"#cdc6bc", error:"#c82931", errorExtra:"#ac1823" },
+      "wavez": { bg:"#1c292f", main:"#6bde3b", caret:"#6bde3b", sub:"#1f5e6b", subAlt:"#1b3238", text:"#e9efe6", error:"#ca4754", errorExtra:"#7e2a33" },
+      "witch_girl": { bg:"#f3dbda", main:"#56786a", caret:"#afc5bd", sub:"#ddb4a7", subAlt:"#e7c8be", text:"#56786a", error:"#b29a91", errorExtra:"#b29a91" },
+    };
+    /* THEMES:END */
+    const THEME_KEYS = Object.keys(THEMES);
+
+    const state = {
+      tier: '100',
+      length: 25,
+      showMeaning: true,
+      theme: 'default_dark',
+      inputMode: 'korean',   // 'korean' = built-in IME | 'system' = OS IME
+      showKeyboard: true,
+      composing: false,
+      words: [],
+      typed: [],
+      cursor: 0,
+      status: 'idle',       // idle | running | finished
+      startTime: 0,
+      elapsed: 0,
+      timer: null,
+      typingTimer: null,
+      samples: [],          // per-second {t, wpm, raw, errors} for the results chart
+      lastSampleAt: 0,
+      prevWrong: 0,
+      prevCorrect: 0,
+      prevRaw: 0,
+    };
+
+    const capture  = $('capture');
+    const wordsEl  = $('words');
+    const windowEl = $('wordsWindow');
+    let panelOpen = false;
+
+    /* ---------------- helpers ---------------- */
+    function esc(s) {
+      return String(s).replace(/[&<>"']/g, (c) =>
+        ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+    function shuffle(a) {
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
+    function fmtTime(ms) {
+      const total = Math.max(0, Math.floor(ms / 1000));
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return m + ':' + String(s).padStart(2, '0');
+    }
+
+    /* ---------------- test lifecycle ---------------- */
+    function pickWords() {
+      // de-duplicate by Hangul so the same word never appears twice in one test
+      const seen = new Set();
+      const unique = [];
+      for (const pair of TIERS[state.tier].words) {
+        if (!seen.has(pair[0])) { seen.add(pair[0]); unique.push(pair); }
+      }
+      const n = Math.min(state.length, unique.length);
+      state.words = shuffle(unique).slice(0, n);
+    }
+
+    function newTest(keepWords) {
+      if (!keepWords) pickWords();
+      state.typed = new Array(state.words.length).fill('');
+      state.cursor = 0;
+      state.status = 'idle';
+      state.startTime = 0;
+      state.elapsed = 0;
+      state.samples = [];
+      state.lastSampleAt = 0;
+      state.prevWrong = 0;
+      state.prevCorrect = 0;
+      state.prevRaw = 0;
+      state.composing = false;
+      imeReset();
+      clearInterval(state.timer);
+      state.timer = null;
+      capture.value = '';
+      document.body.classList.remove('typing');
+      $('results').classList.add('hidden');
+
+      render();
+      updateTicker();
+      if (!panelOpen) capture.focus({ preventScroll: true });
+    }
+
+    function ensureStarted() {
+      if (state.status !== 'running') {
+        state.status = 'running';
+        state.startTime = Date.now();
+        state.timer = setInterval(() => {
+          state.elapsed = Date.now() - state.startTime;
+          maybeSample();
+          updateTicker();
+        }, 100);
+      }
+    }
+
+    /* one chart sample per second */
+    function maybeSample() {
+      const sec = Math.floor(state.elapsed / 1000);
+      while (state.lastSampleAt < sec) {
+        state.lastSampleAt++;
+        pushSample(state.lastSampleAt);
+      }
+    }
+
+    function pushSample(t) {
+      const s = countChars();
+      const dc = Math.max(0, s.correct - state.prevCorrect);
+      const dr = Math.max(0, s.raw - state.prevRaw);
+      const errors = Math.max(0, s.wrong - state.prevWrong);
+      state.prevCorrect = s.correct;
+      state.prevRaw = s.raw;
+      state.prevWrong = s.wrong;
+      state.samples.push({ t, wpm: (dc / 5) * 60, raw: (dr / 5) * 60, errors });
+    }
+
+    /* ---------------- built-in Korean IME (두벌식 / dubeolsik) ----------------
+       Lets you type Hangul even when the OS keyboard layout is English. */
+    const DUBEOL = {
+      q:'ㅂ', w:'ㅈ', e:'ㄷ', r:'ㄱ', t:'ㅅ', y:'ㅛ', u:'ㅕ', i:'ㅑ', o:'ㅐ', p:'ㅔ',
+      a:'ㅁ', s:'ㄴ', d:'ㅇ', f:'ㄹ', g:'ㅎ', h:'ㅗ', j:'ㅓ', k:'ㅏ', l:'ㅣ',
+      z:'ㅋ', x:'ㅌ', c:'ㅊ', v:'ㅍ', b:'ㅠ', n:'ㅜ', m:'ㅡ',
+    };
+    const DUBEOL_SHIFT = { Q:'ㅃ', W:'ㅉ', E:'ㄸ', R:'ㄲ', T:'ㅆ', O:'ㅒ', P:'ㅖ' };
+
+    const CHO  = ['ㄱ','ㄲ','ㄴ','ㄷ','ㄸ','ㄹ','ㅁ','ㅂ','ㅃ','ㅅ','ㅆ','ㅇ','ㅈ','ㅉ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+    const JUNG = ['ㅏ','ㅐ','ㅑ','ㅒ','ㅓ','ㅔ','ㅕ','ㅖ','ㅗ','ㅘ','ㅙ','ㅚ','ㅛ','ㅜ','ㅝ','ㅞ','ㅟ','ㅠ','ㅡ','ㅢ','ㅣ'];
+    const JONG = ['','ㄱ','ㄲ','ㄳ','ㄴ','ㄵ','ㄶ','ㄷ','ㄹ','ㄺ','ㄻ','ㄼ','ㄽ','ㄾ','ㄿ','ㅀ','ㅁ','ㅂ','ㅄ','ㅅ','ㅆ','ㅇ','ㅈ','ㅊ','ㅋ','ㅌ','ㅍ','ㅎ'];
+
+    const VOWEL_COMBINE = { 'ㅗㅏ':'ㅘ','ㅗㅐ':'ㅙ','ㅗㅣ':'ㅚ','ㅜㅓ':'ㅝ','ㅜㅔ':'ㅞ','ㅜㅣ':'ㅟ','ㅡㅣ':'ㅢ' };
+    const FINAL_COMBINE = { 'ㄱㅅ':'ㄳ','ㄴㅈ':'ㄵ','ㄴㅎ':'ㄶ','ㄹㄱ':'ㄺ','ㄹㅁ':'ㄻ','ㄹㅂ':'ㄼ','ㄹㅅ':'ㄽ','ㄹㅌ':'ㄾ','ㄹㅍ':'ㄿ','ㄹㅎ':'ㅀ','ㅂㅅ':'ㅄ' };
+    const FINAL_SPLIT = {
+      'ㄳ':['ㄱ','ㅅ'],'ㄵ':['ㄴ','ㅈ'],'ㄶ':['ㄴ','ㅎ'],'ㄺ':['ㄹ','ㄱ'],'ㄻ':['ㄹ','ㅁ'],'ㄼ':['ㄹ','ㅂ'],
+      'ㄽ':['ㄹ','ㅅ'],'ㄾ':['ㄹ','ㅌ'],'ㄿ':['ㄹ','ㅍ'],'ㅀ':['ㄹ','ㅎ'],'ㅄ':['ㅂ','ㅅ'],
+    };
+
+    const ime = { cho: -1, jung: -1, jong: 0, hist: [] };
+
+    function keyToJamo(key) {
+      if (key.length !== 1) return null;
+      if (DUBEOL_SHIFT[key]) return DUBEOL_SHIFT[key];
+      const lower = key.toLowerCase();
+      return Object.prototype.hasOwnProperty.call(DUBEOL, lower) ? DUBEOL[lower] : null;
+    }
+
+    function imeReset() { ime.cho = -1; ime.jung = -1; ime.jong = 0; ime.hist = []; }
+
+    function imeRender() {
+      if (ime.cho === -1 && ime.jung === -1) return '';
+      if (ime.jung === -1) return CHO[ime.cho];
+      if (ime.cho === -1) return JUNG[ime.jung];
+      return String.fromCharCode(0xAC00 + ((ime.cho * 21) + ime.jung) * 28 + ime.jong);
+    }
+
+    function imeFlush() {
+      const s = imeRender();
+      if (s) state.typed[state.cursor] = (state.typed[state.cursor] || '') + s;
+      imeReset();
+    }
+
+    function imeAdd(j) {
+      if (CHO.indexOf(j) !== -1) {
+        // ---- consonant ----
+        if (ime.jung === -1) {
+          if (ime.cho === -1) ime.cho = CHO.indexOf(j);
+          else { imeFlush(); ime.cho = CHO.indexOf(j); }
+        } else if (ime.jong === 0) {
+          if (JONG.indexOf(j) > 0) {
+            if (ime.cho === -1) ime.cho = CHO.indexOf('ㅇ');  // silent initial
+            ime.jong = JONG.indexOf(j);
+          } else { imeFlush(); ime.cho = CHO.indexOf(j); }
+        } else {
+          const combined = FINAL_COMBINE[JONG[ime.jong] + j];
+          if (combined) ime.jong = JONG.indexOf(combined);
+          else { imeFlush(); ime.cho = CHO.indexOf(j); }
+        }
+      } else {
+        // ---- vowel ----
+        if (ime.jung === -1) {
+          ime.jung = JUNG.indexOf(j);
+        } else {
+          const combined = VOWEL_COMBINE[JUNG[ime.jung] + j];
+          if (combined) {
+            ime.jung = JUNG.indexOf(combined);
+          } else if (ime.jong !== 0) {
+            // a vowel after a final moves that consonant into the next syllable
+            const finChar = JONG[ime.jong];
+            const split = FINAL_SPLIT[finChar];
+            let keepJong = 0, moveChar = finChar;
+            if (split) { keepJong = JONG.indexOf(split[0]); moveChar = split[1]; }
+            ime.jong = keepJong;
+            state.typed[state.cursor] = (state.typed[state.cursor] || '') + imeRender();
+            imeReset();
+            ime.cho = CHO.indexOf(moveChar);
+            ime.jung = JUNG.indexOf(j);
+            ime.hist.push(moveChar);   // so backspace can replay this syllable
+          } else {
+            imeFlush();
+            ime.jung = JUNG.indexOf(j);
+          }
+        }
+      }
+      ime.hist.push(j);
+    }
+
+    function imeBackspace() {
+      if (ime.hist.length > 0) {
+        // remove the last jamo and replay the rest of the current syllable
+        const hist = ime.hist.slice(0, -1);
+        const before = state.typed[state.cursor] || '';
+        imeReset();
+        for (let i = 0; i < hist.length; i++) imeAdd(hist[i]);
+        state.typed[state.cursor] = before;   // replay must not commit text
+        return true;
+      }
+      const cur = state.typed[state.cursor] || '';
+      if (cur.length > 0) { state.typed[state.cursor] = cur.slice(0, -1); return true; }
+      if (state.cursor > 0) { state.cursor--; return true; }
+      return false;
+    }
+
+    /* ---------------- rendering ---------------- */
+    function render() {
+      let html = '';
+      for (let w = 0; w < state.words.length; w++) {
+        const target = state.words[w][0];
+        const active = w === state.cursor;
+
+        let p = state.typed[w] || '';
+        let compLen = 0;
+        if (active) {
+          if (state.inputMode === 'korean') {
+            const cstr = imeRender();
+            p += cstr;
+            compLen = cstr.length;
+          } else if (state.composing) {
+            compLen = 1;
+          }
+        }
+        const compStart = (compLen > 0 && p.length >= compLen) ? p.length - compLen : Infinity;
+        const maxLen = Math.max(target.length, p.length);
+        let inner = '';
+
+        for (let c = 0; c < maxLen; c++) {
+          if (active && c === p.length) inner += '<span class="caret"></span>';
+          const t = target[c];
+          const pc = p[c];
+
+          if (c >= compStart) {
+            // syllable still being assembled by the IME — shown, but never as an error
+            inner += '<span class="ch-composing">' + esc(pc) + '</span>';
+          } else if (t === undefined) {
+            inner += '<span class="ch-wrong">' + esc(pc) + '</span>';
+          } else if (c >= p.length) {
+            inner += '<span class="ch-pending">' + esc(t) + '</span>';
+          } else {
+            inner += '<span class="' + (pc === t ? 'ch-correct' : 'ch-wrong') + '">' + esc(t) + '</span>';
+          }
+        }
+        if (active && p.length >= maxLen) inner += '<span class="caret"></span>';
+
+        html += '<span class="word' + (active ? ' word-active' : '') + '" data-i="' + w + '">' + inner + '</span>';
+      }
+      wordsEl.innerHTML = html;
+
+      // keep the active line in view (show 3 lines) and place the meaning caption
+      const first = wordsEl.firstElementChild;
+      const activeEl = wordsEl.querySelector('.word-active');
+      if (first && activeEl) {
+        const gap = parseFloat(getComputedStyle(first).marginBottom) || 0;
+        const step = first.offsetHeight + gap;         // one line box, incl. the gap
+        windowEl.style.height = Math.round(step * 3) + 'px';
+        const line = Math.round((activeEl.offsetTop - first.offsetTop) / step);
+        const shift = Math.max(0, line - 1);
+        wordsEl.style.transform = 'translateY(' + (-shift * step) + 'px)';
+
+        if (state.showMeaning && state.words[state.cursor]) {
+          const label = document.createElement('span');
+          label.className = 'word-meaning';
+          label.textContent = state.words[state.cursor][1];
+          wordsEl.appendChild(label);
+          const cx = activeEl.offsetLeft + activeEl.offsetWidth / 2;
+          const cy = activeEl.offsetTop + activeEl.offsetHeight + 2;
+          label.style.top = cy + 'px';
+          const maxLeft = Math.max(0, wordsEl.clientWidth - label.offsetWidth);
+          label.style.left = Math.max(0, Math.min(maxLeft, cx - label.offsetWidth / 2)) + 'px';
+        }
+      }
+    }
+
+    /* ---------------- stats ---------------- */
+    function countChars() {
+      let correct = 0, raw = 0, committed = 0, correctWords = 0;
+      let wrong = 0, extra = 0, missed = 0;
+
+      for (let i = 0; i < state.words.length; i++) {
+        if (i > state.cursor) break;                 // words not reached yet
+        const t = state.words[i][0];
+        let p = state.typed[i] || '';
+        // while a syllable is mid-composition (system IME), don't count it yet
+        if (state.composing && i === state.cursor) p = p.slice(0, -1);
+
+        const active = (i === state.cursor && state.status !== 'finished');
+        const m = Math.max(t.length, p.length);
+        for (let c = 0; c < m; c++) {
+          if (c >= t.length) extra++;
+          else if (c >= p.length) { if (!active) missed++; }
+          else if (p[c] === t[c]) correct++;
+          else wrong++;
+        }
+        raw += p.length;
+        if (!active) {
+          committed++;
+          if (p === t) correctWords++;
+        }
+      }
+      raw += committed;     // one space typed per committed word
+      correct += committed; // a committed space always counts as a correct keystroke
+      return { correct, raw, committed, correctWords, wrong, extra, missed };
+    }
+
+    function updateTicker() {
+      const { correct, raw } = countChars();
+      const minutes = state.elapsed > 0 ? state.elapsed / 60000 : 0;
+      const wpm = minutes > 0 ? (correct / 5) / minutes : 0;
+      const acc = raw > 0 ? (correct / raw) * 100 : 100;
+
+      $('tWpm').textContent  = minutes > 0 ? Math.round(wpm) : 0;
+      $('tAcc').textContent  = raw > 0 ? Math.round(acc) + '%' : '--';
+      $('tTime').textContent = fmtTime(state.elapsed);
+      $('tLeft').textContent = Math.max(0, state.words.length - state.cursor - (state.status === 'finished' ? 0 : 0));
+    }
+
+    /* ---------------- input ---------------- */
+    function markTyping() {
+      document.body.classList.add('typing');
+      clearTimeout(state.typingTimer);
+      state.typingTimer = setTimeout(() => document.body.classList.remove('typing'), 900);
+    }
+
+    function onInput() {
+      if (state.status === 'finished') { capture.value = ''; return; }
+      const v = capture.value;
+      const sp = v.search(/[\s\u3000]/);
+
+      if (sp !== -1) {
+        const part = v.slice(0, sp);
+        capture.value = '';
+        if (part.length === 0) { render(); return; } // ignore stray space
+        commit(part);
+        return;
+      }
+
+      state.typed[state.cursor] = v;
+      ensureStarted();
+      markTyping();
+      render();
+      updateTicker();
+      maybeAutoFinish();
+    }
+
+    /* the text currently shown for the active word, including any IME composition */
+    function activeText() {
+      let p = state.typed[state.cursor] || '';
+      if (state.inputMode === 'korean') p += imeRender();
+      return p;
+    }
+
+    /* finish immediately once the last word is typed correctly */
+    function maybeAutoFinish() {
+      if (state.status === 'finished') return false;
+      if (state.cursor !== state.words.length - 1) return false;
+      const target = state.words[state.cursor][0];
+      if (activeText() !== target) return false;
+      if (state.inputMode === 'korean') imeFlush();
+      finish();
+      return true;
+    }
+
+    function commit(value) {
+      state.typed[state.cursor] = value;
+      ensureStarted();
+      markTyping();
+
+      if (state.cursor >= state.words.length - 1) {
+        finish();
+        return;
+      }
+      state.cursor++;
+      if (state.typed[state.cursor] == null) state.typed[state.cursor] = '';
+      render();
+      updateTicker();
+    }
+
+    /* ---------------- finish + results ---------------- */
+    function finish() {
+      state.status = 'finished';
+      state.elapsed = Date.now() - state.startTime;
+      clearInterval(state.timer);
+      state.timer = null;
+      state.composing = false;
+      imeReset();
+      capture.value = '';
+      document.body.classList.remove('typing');
+
+      // capture the final partial second for the graph
+      const tNow = state.elapsed / 1000;
+      if (tNow > state.lastSampleAt + 0.05) pushSample(tNow);
+
+      const s = countChars();
+      const minutes = state.elapsed / 60000 || 1 / 60000;
+      const wpm = (s.correct / 5) / minutes;
+      const rawWpm = (s.raw / 5) / minutes;
+      const acc = s.raw > 0 ? (s.correct / s.raw) * 100 : 100;
+
+      $('rWpm').textContent    = Math.round(wpm);
+      $('rRaw').textContent    = Math.round(rawWpm);
+      $('rAcc').textContent    = Math.round(acc) + '%';
+      $('rCons').textContent   = Math.round(consistency()) + '%';
+      $('rChars').textContent  = s.correct + '/' + s.wrong + '/' + s.extra + '/' + s.missed;
+      $('rTime').textContent   = fmtTime(state.elapsed);
+      $('rWords').textContent  = s.correctWords + '/' + state.words.length;
+      $('rErrors').textContent = s.wrong + s.extra + s.missed;
+      $('rTier').textContent   = TIERS[state.tier].label + ' · ' + state.words.length + ' words';
+
+      buildBreakdown();
+      $('results').classList.remove('hidden');
+      updateTicker();
+      drawChart();
+    }
+
+    function consistency() {
+      const vals = state.samples.map((x) => x.raw).filter((v) => v > 0);
+      if (vals.length < 2) return 100;
+      const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+      if (mean <= 0) return 0;
+      const sd = Math.sqrt(vals.reduce((a, b) => a + (b - mean) * (b - mean), 0) / vals.length);
+      return Math.max(0, Math.min(100, 100 * (1 - sd / mean)));
+    }
+
+    /* ---------------- results graph ---------------- */
+    function drawChart() {
+      const canvas = $('chart');
+      if (!canvas) return;
+      const samples = state.samples;
+      const cssW = canvas.clientWidth || canvas.parentElement.clientWidth || 640;
+      const cssH = 230;
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.round(cssW * dpr);
+      canvas.height = Math.round(cssH * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, cssW, cssH);
+      if (samples.length < 1) return;
+
+      const rootCS = getComputedStyle(document.documentElement);
+      const col = (name, a) => 'rgb(' + rootCS.getPropertyValue(name).trim() + (a != null ? ' / ' + a : '') + ')';
+
+      const padL = 36, padR = 14, padT = 16, padB = 24;
+      const w = cssW - padL - padR;
+      const h = cssH - padT - padB;
+
+      const maxT = Math.max(1, samples[samples.length - 1].t);
+      const maxW = Math.max(10, ...samples.map((s) => Math.max(s.wpm, s.raw))) * 1.15;
+      const X = (t) => padL + (t / maxT) * w;
+      const Y = (v) => padT + h - (v / maxW) * h;
+
+      // grid + y-axis
+      ctx.font = '10px "Roboto Mono", monospace';
+      ctx.strokeStyle = col('--c-line', 0.85);
+      ctx.lineWidth = 1;
+      const ticks = 4;
+      for (let i = 0; i <= ticks; i++) {
+        const v = (maxW / ticks) * i;
+        const y = Math.round(Y(v)) + 0.5;
+        ctx.beginPath(); ctx.moveTo(padL, y); ctx.lineTo(padL + w, y); ctx.stroke();
+        ctx.fillStyle = col('--c-sub', 0.6);
+        ctx.fillText(String(Math.round(v)), 6, y + 3);
+      }
+      // x-axis
+      ctx.fillStyle = col('--c-sub', 0.6);
+      ctx.fillText('0s', padL, cssH - 7);
+      const mt = Math.round(maxT / 2);
+      ctx.fillText(mt + 's', X(mt) - 7, cssH - 7);
+      ctx.fillText(Math.round(maxT) + 's', padL + w - 16, cssH - 7);
+
+      const trace = (key) => {
+        ctx.beginPath();
+        samples.forEach((s, i) => {
+          const x = X(s.t), y = Y(s[key]);
+          if (i === 0) ctx.moveTo(x, y); else ctx.lineTo(x, y);
+        });
+      };
+
+      // raw (sub) line
+      trace('raw');
+      ctx.strokeStyle = col('--c-sub', 0.85);
+      ctx.lineWidth = 1.5;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+
+      // wpm (main) filled area + line
+      const grad = ctx.createLinearGradient(0, padT, 0, padT + h);
+      grad.addColorStop(0, col('--c-main', 0.28));
+      grad.addColorStop(1, col('--c-main', 0));
+      trace('wpm');
+      ctx.lineTo(X(samples[samples.length - 1].t), padT + h);
+      ctx.lineTo(X(samples[0].t), padT + h);
+      ctx.closePath();
+      ctx.fillStyle = grad;
+      ctx.fill();
+
+      trace('wpm');
+      ctx.strokeStyle = col('--c-main');
+      ctx.lineWidth = 2;
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+
+      // error dots
+      samples.forEach((s) => {
+        if (s.errors > 0) {
+          ctx.beginPath();
+          ctx.arc(X(s.t), Y(s.wpm), Math.min(7, 2.5 + s.errors), 0, Math.PI * 2);
+          ctx.fillStyle = col('--c-error');
+          ctx.fill();
+        }
+      });
+    }
+
+    function buildBreakdown() {
+      $('breakdown').innerHTML = state.words.map((pair, i) => {
+        const k = pair[0], e = pair[1];
+        const t = state.typed[i] || '';
+        const ok = t === k;
+        return '' +
+          '<div class="flex items-center justify-between gap-4 px-4 py-2.5 ' + (ok ? '' : 'bg-error/10') + '">' +
+            '<div class="flex items-baseline gap-3 min-w-0">' +
+              '<span class="text-lg ' + (ok ? 'text-text' : 'text-error') + '">' + esc(k) + '</span>' +
+              '<span class="text-sm text-sub truncate">' + esc(e) + '</span>' +
+            '</div>' +
+            (ok
+              ? '<span class="text-main text-sm shrink-0">&#10003;</span>'
+              : '<span class="text-sm text-error/80 shrink-0">' + (t ? esc(t) : '&mdash;') + '</span>') +
+          '</div>';
+      }).join('');
+    }
+
+    /* ---------------- events ---------------- */
+    capture.addEventListener('input', onInput);
+
+    // Hangul IME composition — show the syllable being assembled, never as an error
+    capture.addEventListener('compositionstart', () => { state.composing = true; });
+    capture.addEventListener('compositionend', () => { state.composing = false; render(); });
+
+    capture.addEventListener('keydown', (e) => {
+      if (state.inputMode !== 'system') return;   // built-in IME handles keys itself
+      if (e.key === 'Backspace' && capture.value === '' && !e.isComposing && state.cursor > 0
+          && state.status !== 'finished') {
+        state.cursor--;
+        capture.value = state.typed[state.cursor] || '';
+        state.typed[state.cursor] = capture.value;
+        render();
+        e.preventDefault();
+      }
+    });
+
+    document.addEventListener('keydown', (e) => {
+      // the settings panel takes keyboard priority
+      if (panelOpen) {
+        if (e.key === 'Escape') { e.preventDefault(); setPanel(false); }
+        return;
+      }
+      // global restart shortcuts
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        if (state.status === 'finished') { e.preventDefault(); newTest(false); return; }
+        if (e.key === 'Tab') { e.preventDefault(); newTest(false); return; }
+      }
+      if (e.key === 'Escape') { e.preventDefault(); newTest(false); return; }
+
+      if (state.status === 'finished') return;
+
+      /* ---- built-in Korean input: works even if the OS keyboard is English ---- */
+      if (state.inputMode === 'korean' && !e.isComposing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (document.activeElement !== capture) capture.focus({ preventScroll: true });
+
+        if (e.key === 'Backspace') {
+          e.preventDefault();
+          imeBackspace();
+          render(); updateTicker();
+          return;
+        }
+        if (e.key === ' ') {
+          e.preventDefault();
+          const v = (state.typed[state.cursor] || '') + imeRender();
+          imeReset();
+          if (v.length === 0) { render(); return; }  // ignore stray space
+          commit(v);
+          return;
+        }
+        if (e.key.length === 1) {
+          const jamo = keyToJamo(e.key);
+          if (jamo) {
+            e.preventDefault();
+            flashKey(e.key.toLowerCase());
+            imeAdd(jamo);
+            ensureStarted();
+            markTyping();
+            if (!maybeAutoFinish()) { render(); updateTicker(); }
+          } else if (e.key.charCodeAt(0) < 128) {
+            e.preventDefault();   // swallow stray latin / punctuation keys
+          }
+          return;
+        }
+        return;
+      }
+
+      // ---- system IME: focus the hidden input and let the OS compose ----
+      if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key.length === 1
+          && document.activeElement !== capture
+          && document.activeElement.tagName !== 'SELECT'
+          && document.activeElement.tagName !== 'INPUT') {
+        capture.focus({ preventScroll: true });
+      }
+    });
+
+    // click / tap to focus
+    document.addEventListener('mousedown', (e) => {
+      if (state.status === 'finished' || panelOpen) return;
+      if (e.target.closest('#results') || e.target.closest('select')) return;
+      capture.focus({ preventScroll: true });
+    });
+
+    // settings bar / panel controls (delegated, since the panel is built dynamically)
+    document.addEventListener('click', (e) => {
+      const lenBtn = e.target.closest('[data-len]');
+      if (lenBtn) { state.length = parseInt(lenBtn.dataset.len, 10); syncSettings(); saveSettings(); newTest(false); return; }
+
+      const tierBtn = e.target.closest('[data-tier]');
+      if (tierBtn) { state.tier = tierBtn.dataset.tier; syncSettings(); saveSettings(); newTest(false); return; }
+
+      const meaningBtn = e.target.closest('[data-meaning]');
+      if (meaningBtn) {
+        state.showMeaning = meaningBtn.dataset.meaning === 'on';
+        syncSettings(); saveSettings(); render(); return;
+      }
+
+      const inputBtn = e.target.closest('[data-input]');
+      if (inputBtn) { setInputMode(inputBtn.dataset.input); return; }
+
+      const kbdBtn = e.target.closest('[data-kbd]');
+      if (kbdBtn) {
+        state.showKeyboard = kbdBtn.dataset.kbd === 'on';
+        syncSettings(); saveSettings(); buildKeyboard(); return;
+      }
+    });
+
+    // drop-down in the bar
+    $('tierSelect').addEventListener('change', (e) => {
+      state.tier = e.target.value;
+      syncSettings(); saveSettings();
+      newTest(false);
+    });
+
+    $('meaningToggle').addEventListener('click', () => {
+      state.showMeaning = !state.showMeaning;
+      syncSettings(); saveSettings(); render();
+    });
+
+    // restart / navigation
+    $('logoBtn').addEventListener('click', (e) => { e.preventDefault(); newTest(false); });
+    $('restartBtn').addEventListener('click', () => newTest(false));
+    $('nextBtn').addEventListener('click', () => newTest(false));
+    $('repeatBtn').addEventListener('click', () => newTest(true));
+
+    // settings panel open / close
+    $('openSettings').addEventListener('click', () => setPanel(true));
+    $('closeSettings').addEventListener('click', () => setPanel(false));
+    $('settingsOverlay').addEventListener('click', () => setPanel(false));
+
+    window.addEventListener('resize', () => {
+      if (state.words.length) render();
+      if (!$('results').classList.contains('hidden')) drawChart();
+    });
+    window.addEventListener('blur', () => { clearTimeout(state.typingTimer); document.body.classList.remove('typing'); });
+
+    function setPanel(open) {
+      panelOpen = open;
+      $('settingsPanel').classList.toggle('translate-x-full', !open);
+      $('settingsOverlay').classList.toggle('opacity-0', !open);
+      $('settingsOverlay').classList.toggle('pointer-events-none', !open);
+      if (!open) capture.focus({ preventScroll: true });
+    }
+
+    /* ---------------- themes ---------------- */
+    let animRAF = null;
+
+    function hexToRgb(hex) {
+      let h = String(hex).replace('#', '');
+      if (h.length === 3) h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+      const n = parseInt(h.slice(0, 6), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+    }
+    function mixHex(a, b, amt) {
+      const A = hexToRgb(a), B = hexToRgb(b);
+      return A.map((v, i) => Math.round(v + (B[i] - v) * amt));
+    }
+    function stopAnim() { if (animRAF) cancelAnimationFrame(animRAF); animRAF = null; }
+
+    // animated themes (Monkeytype ones that cycle colour) — interpolate --c-main / --c-caret
+    function startAnim(colors) {
+      stopAnim();
+      if (!colors || colors.length < 2) return;
+      const cycle = colors.concat([colors[0]]);
+      const dur = 5000;
+      const t0 = performance.now();
+      const step = (now) => {
+        const p = ((now - t0) % dur) / dur;
+        const seg = p * (cycle.length - 1);
+        const i = Math.floor(seg), f = seg - i;
+        const c1 = hexToRgb(cycle[i]);
+        const c2 = hexToRgb(cycle[Math.min(i + 1, cycle.length - 1)]);
+        const rgb = c1.map((v, k) => Math.round(v + (c2[k] - v) * f)).join(' ');
+        const root = document.documentElement;
+        root.style.setProperty('--c-main', rgb);
+        root.style.setProperty('--c-caret', rgb);
+        animRAF = requestAnimationFrame(step);
+      };
+      animRAF = requestAnimationFrame(step);
+    }
+
+    function applyTheme(name) {
+      if (!THEMES[name]) name = 'default_dark';
+      const t = THEMES[name];
+      state.theme = name;
+
+      const root = document.documentElement;
+      root.setAttribute('data-theme', name);
+      const setHex = (k, hex) => root.style.setProperty(k, hexToRgb(hex).join(' '));
+      const setRgb = (k, arr) => root.style.setProperty(k, arr.join(' '));
+
+      setHex('--c-bg', t.bg);
+      setHex('--c-panel', t.subAlt || t.bg);
+      setRgb('--c-line', t.subAlt ? mixHex(t.subAlt, t.sub, 0.4) : hexToRgb(t.bg));
+      setHex('--c-sub', t.sub);
+      setHex('--c-text', t.text);
+      setHex('--c-error', t.error);
+      setHex('--c-main', t.main);
+      setHex('--c-caret', t.caret || t.main);
+
+      if (t.anim) startAnim(t.anim); else stopAnim();
+
+      document.querySelectorAll('#themeGrid .theme-btn').forEach((b) =>
+        b.classList.toggle('active', b.dataset.theme === name));
+      saveSettings();
+    }
+
+    function buildThemeGrid() {
+      const rgbStr = (hex) => 'rgb(' + hexToRgb(hex).join(',') + ')';
+      $('themeGrid').innerHTML = THEME_KEYS.map((key) => {
+        const t = THEMES[key];
+        const label = key.replace(/_/g, ' ');
+        return '<button class="theme-btn' + (t.anim ? ' animated' : '') + '" data-theme="' + key + '"' +
+            ' title="' + label + '" style="background:' + rgbStr(t.bg) + ';color:' + rgbStr(t.text) + '">' +
+            '<span class="block truncate">' + label + '</span>' +
+            '<span class="theme-dots">' +
+              '<span class="theme-dot" style="background:' + rgbStr(t.main) + '"></span>' +
+              '<span class="theme-dot" style="background:' + rgbStr(t.text) + '"></span>' +
+              '<span class="theme-dot" style="background:' + rgbStr(t.sub) + '"></span>' +
+              '<span class="theme-dot" style="background:' + rgbStr(t.error) + '"></span>' +
+            '</span>' +
+          '</button>';
+      }).join('');
+      $('themeGrid').querySelectorAll('.theme-btn').forEach((b) =>
+        b.addEventListener('click', () => applyTheme(b.dataset.theme)));
+    }
+
+    function buildSettingsControls() {
+      $('settingsWords').innerHTML = [10, 25, 50].map((n) =>
+        '<button class="seg-btn" data-len="' + n + '">' + n + '</button>').join('');
+
+      $('settingsTiers').innerHTML = [
+        ['100', 'Top 100 · Most Common'],
+        ['200', 'Top 200 · Common'],
+        ['500', 'Top 500 · TOPIK Level 1'],
+      ].map(([v, label]) =>
+        '<button class="seg-btn text-left" data-tier="' + v + '">' + label + '</button>').join('');
+
+      $('settingsMeaning').innerHTML =
+        '<button class="seg-btn" data-meaning="on">on</button>' +
+        '<button class="seg-btn" data-meaning="off">off</button>';
+
+      $('settingsInput').innerHTML =
+        '<button class="seg-btn text-left" data-input="korean">built-in Korean (English keyboard)</button>' +
+        '<button class="seg-btn text-left" data-input="system">system IME (OS Korean keyboard)</button>';
+
+      $('settingsKbd').innerHTML =
+        '<button class="seg-btn" data-kbd="on">on</button>' +
+        '<button class="seg-btn" data-kbd="off">off</button>';
+    }
+
+    function setInputMode(mode) {
+      state.inputMode = (mode === 'system') ? 'system' : 'korean';
+      state.composing = false;
+      imeReset();
+      capture.value = '';
+      syncSettings(); saveSettings();
+      render(); updateTicker();
+    }
+
+    /* ---------------- on-screen keyboard (두벌식) ---------------- */
+    const KEY_ROWS = [
+      ['q','w','e','r','t','y','u','i','o','p'],
+      ['a','s','d','f','g','h','j','k','l'],
+      ['z','x','c','v','b','n','m'],
+    ];
+
+    function buildKeyboard() {
+      const kb = $('keyboard');
+      if (!kb) return;
+      if (!state.showKeyboard) { kb.innerHTML = ''; kb.style.display = 'none'; return; }
+      kb.style.display = '';
+      kb.innerHTML = KEY_ROWS.map((row) =>
+        '<div class="kbd-row">' + row.map((k) =>
+          '<button class="kbd-key" data-key="' + k + '" title="' + k.toUpperCase() + ' / ' + (DUBEOL_SHIFT[k.toUpperCase()] || DUBEOL[k]) + '">' +
+            (DUBEOL[k] || '') + '</button>'
+        ).join('') + '</div>'
+      ).join('');
+      kb.querySelectorAll('.kbd-key').forEach((btn) =>
+        btn.addEventListener('click', () => {
+          flashKey(btn.dataset.key);
+          handleJamo(DUBEOL[btn.dataset.key]);
+        }));
+    }
+
+    function flashKey(letter) {
+      const el = document.querySelector('#keyboard .kbd-key[data-key="' + letter + '"]');
+      if (!el) return;
+      el.classList.add('pressed');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.classList.remove('pressed'), 130);
+    }
+
+    function handleJamo(jamo) {
+      if (!jamo || panelOpen || state.status === 'finished') return;
+      if (state.inputMode !== 'korean') return;
+      imeAdd(jamo);
+      ensureStarted();
+      markTyping();
+      if (!maybeAutoFinish()) { render(); updateTicker(); }
+      if (!panelOpen) capture.focus({ preventScroll: true });
+    }
+
+    /* ---------------- persistence ---------------- */
+    function saveSettings() {
+      try {
+        localStorage.setItem('koreantype.settings', JSON.stringify({
+          theme: state.theme, length: state.length, tier: state.tier,
+          showMeaning: state.showMeaning, inputMode: state.inputMode, showKeyboard: state.showKeyboard,
+        }));
+      } catch (e) { /* storage unavailable — ignore */ }
+    }
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem('koreantype.settings');
+        if (!raw) return;
+        const s = JSON.parse(raw);
+        if (s.theme && THEMES[s.theme]) state.theme = s.theme;
+        if ([10, 25, 50].indexOf(s.length) !== -1) state.length = s.length;
+        if (TIERS[s.tier]) state.tier = s.tier;
+        if (typeof s.showMeaning === 'boolean') state.showMeaning = s.showMeaning;
+        if (s.inputMode === 'korean' || s.inputMode === 'system') state.inputMode = s.inputMode;
+        if (typeof s.showKeyboard === 'boolean') state.showKeyboard = s.showKeyboard;
+      } catch (e) { /* corrupted storage — ignore */ }
+    }
+
+    function syncSettings() {
+      document.querySelectorAll('[data-len]').forEach((b) =>
+        b.classList.toggle('active', parseInt(b.dataset.len, 10) === state.length));
+      document.querySelectorAll('[data-tier]').forEach((b) =>
+        b.classList.toggle('active', b.dataset.tier === state.tier));
+      document.querySelectorAll('[data-meaning]').forEach((b) =>
+        b.classList.toggle('active', (b.dataset.meaning === 'on') === state.showMeaning));
+      document.querySelectorAll('[data-input]').forEach((b) =>
+        b.classList.toggle('active', b.dataset.input === state.inputMode));
+      document.querySelectorAll('[data-kbd]').forEach((b) =>
+        b.classList.toggle('active', (b.dataset.kbd === 'on') === state.showKeyboard));
+
+      $('tierSelect').value = state.tier;
+      $('meaningToggle').classList.toggle('active', state.showMeaning);
+
+      const hint = $('inputHint');
+      if (hint) {
+        hint.textContent = state.inputMode === 'korean'
+          ? 'built-in Korean — type on an English keyboard'
+          : 'using your system Korean IME';
+      }
+    }
+
+    /* ---------------- boot ---------------- */
+    loadSettings();
+    buildThemeGrid();
+    buildSettingsControls();
+    buildKeyboard();
+    applyTheme(state.theme);
+    syncSettings();
+    newTest(false);
+  })();
+  </script>
+</body>
+</html>
