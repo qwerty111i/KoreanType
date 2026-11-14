@@ -192,6 +192,63 @@
     .kbd-row { gap: .22rem; margin-bottom: .22rem; }
   }
 
+  /* ---- view tabs ---- */
+  .nav-tab {
+    color: rgb(var(--c-sub));
+    cursor: pointer;
+    padding: .2rem 0;
+    position: relative;
+    transition: color .12s;
+  }
+  .nav-tab:hover { color: rgb(var(--c-text)); }
+  .nav-tab.active { color: rgb(var(--c-main)); }
+  .nav-tab.active::after {
+    content: '';
+    position: absolute;
+    left: 0; right: 0; bottom: -15px;
+    height: 2px;
+    background: rgb(var(--c-main));
+  }
+
+  /* ---- grammar mode ---- */
+  .gp-item {
+    display: flex; align-items: center; gap: .6rem;
+    padding: .5rem .65rem;
+    border-radius: .5rem;
+    font-size: .85rem;
+    color: rgb(var(--c-sub));
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background-color .12s, color .12s, border-color .12s;
+  }
+  .gp-item:hover { color: rgb(var(--c-text)); background: rgb(var(--c-panel)); }
+  .gp-item.active { color: rgb(var(--c-main)); border-color: rgb(var(--c-main) / .45); background: rgb(var(--c-panel)); }
+  .gp-item.locked { opacity: .4; cursor: not-allowed; }
+  .gp-item.locked:hover { color: rgb(var(--c-sub)); background: transparent; }
+
+  .g-ex { border-left: 2px solid rgb(var(--c-line)); padding-left: .9rem; transition: border-color .12s; }
+  .g-ex:hover { border-left-color: rgb(var(--c-main) / .6); }
+  .g-target { color: rgb(var(--c-main)); }
+  .g-en { color: rgb(var(--c-sub)); }
+  .g-reveal { display: none; }
+  .g-ex.revealed .g-en { display: block; }
+
+  .g-opt {
+    padding: .55rem 1rem;
+    border-radius: .5rem;
+    border: 1px solid rgb(var(--c-line));
+    color: rgb(var(--c-text));
+    font-size: 1.05rem;
+    cursor: pointer;
+    transition: border-color .1s, background-color .1s, color .1s;
+  }
+  .g-opt:hover { border-color: rgb(var(--c-sub)); }
+  .g-opt.correct { border-color: rgb(var(--c-main)); color: rgb(var(--c-main)); background: rgb(var(--c-main) / .12); }
+  .g-opt.wrong { border-color: rgb(var(--c-error)); color: rgb(var(--c-error)); background: rgb(var(--c-error) / .12); }
+  .g-opt:disabled { cursor: default; }
+
+  .g-blank { display: inline-block; min-width: 3.2ch; border-bottom: 2px solid rgb(var(--c-main)); color: rgb(var(--c-main)); }
+
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 8px; }
@@ -205,19 +262,27 @@
   <!-- =====================  TOP BAR  ===================== -->
   <header class="w-full">
     <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-      <!-- logo -->
-      <a id="logoBtn" class="flex items-center gap-3 select-none cursor-pointer" href="#">
-        <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="text-main">
-          <rect x="2" y="6" width="20" height="12" rx="2"></rect>
-          <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path>
-        </svg>
-        <div class="leading-none">
-          <div class="text-sub text-xl font-medium">
-            <span class="text-text">Korean</span><span class="text-main">Type</span>
+      <div class="flex items-center gap-5 sm:gap-8 min-w-0">
+        <!-- logo -->
+        <a id="logoBtn" class="flex items-center gap-3 select-none cursor-pointer shrink-0" href="#">
+          <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="text-main">
+            <rect x="2" y="6" width="20" height="12" rx="2"></rect>
+            <path d="M6 10h.01M10 10h.01M14 10h.01M18 10h.01M8 14h8"></path>
+          </svg>
+          <div class="leading-none hidden sm:block">
+            <div class="text-sub text-xl font-medium">
+              <span class="text-text">Korean</span><span class="text-main">Type</span>
+            </div>
+            <div class="text-[10px] tracking-widest text-sub/70 mt-1">한국어 타자 연습</div>
           </div>
-          <div class="text-[10px] tracking-widest text-sub/70 mt-1">한국어 타자 연습</div>
-        </div>
-      </a>
+        </a>
+
+        <!-- view tabs -->
+        <nav class="flex items-center gap-4 text-sm">
+          <button id="tabTyping" class="nav-tab active">typing</button>
+          <button id="tabGrammar" class="nav-tab">grammar</button>
+        </nav>
+      </div>
 
       <!-- live ticker + settings (Monkeytype places the gear top-right) -->
       <div class="flex items-center gap-6">
@@ -251,7 +316,7 @@
   </header>
 
   <!-- =====================  MAIN  ===================== -->
-  <main class="max-w-4xl mx-auto px-6 flex flex-col items-center">
+  <main id="typingView" class="max-w-4xl mx-auto px-6 flex flex-col items-center">
 
     <!-- settings bar -->
     <div class="w-full flex flex-wrap items-center justify-center gap-x-6 gap-y-3 py-4 mb-4
@@ -341,6 +406,27 @@
     <!-- on-screen keyboard -->
     <div id="keyboard" class="w-full mt-7"></div>
   </main>
+
+  <!-- =====================  GRAMMAR VIEW  ===================== -->
+  <section id="grammarView" class="hidden max-w-6xl mx-auto px-4 sm:px-6 py-8">
+    <div class="flex flex-col lg:flex-row gap-8">
+
+      <!-- learning path -->
+      <aside class="lg:w-[19rem] shrink-0">
+        <div class="flex items-center justify-between mb-4">
+          <div class="text-sub text-xs uppercase tracking-[0.2em]">learning path</div>
+          <div id="gProgressText" class="text-xs text-sub/60"></div>
+        </div>
+        <div class="h-1.5 w-full bg-line/40 rounded-full overflow-hidden mb-5">
+          <div id="gProgressBar" class="h-full bg-main transition-all duration-300" style="width:0%"></div>
+        </div>
+        <div id="grammarPath" class="space-y-3 max-h-[72vh] overflow-y-auto pr-1"></div>
+      </aside>
+
+      <!-- lesson content -->
+      <div id="grammarContent" class="flex-1 min-w-0"></div>
+    </div>
+  </section>
 
   <!-- =====================  RESULTS OVERLAY  ===================== -->
   <section id="results"
@@ -608,6 +694,559 @@
   </script>
 
   <!-- ================================================================= -->
+  <!--                          GRAMMAR DATA                              -->
+  <!-- ================================================================= -->
+  <script>
+  /* Grammar path built from the class slides (Lessons 1-6).
+     Each entry: l=lesson, t=title, v=vocab, p=points.
+     Point: t=title, x=explanation, f=formation rules, d=distractors, e=examples.
+     In examples the drilled form is wrapped in [[ ]] (the cloze target). */
+  const GRAMMAR = [
+    {
+      l: 1, t: '이름이 참 예뻐요', sub: '여기가 사이언스 빌딩이에요?',
+      v: [['이름','name'],['참','really, very'],['여기','here'],['사이언스','science'],['빌딩','building'],['네','yes'],['뭐','what'],['전공','major'],['일','one'],['학년','school year'],['컴퓨터','computer'],['정말','really']],
+      p: [
+        { t: '이/가 — subject marker',
+          x: 'Marks the subject of the sentence. Korean shows grammatical roles with particles, so word order is flexible. Use 이 after a consonant, 가 after a vowel.',
+          f: ['받침 있음 + 이  (이름 → 이름이)', '받침 없음 + 가  (친구 → 친구가)'],
+          d: ['이','가','은','는','을','를'],
+          e: [
+            ['이름[[이]] 뭐예요?', 'What is your name?'],
+            ['친구[[가]] BTS를 좋아해요.', 'My friend likes BTS.'],
+            ['도서관[[이]] 유니온 빌딩에 있어요.', 'The library is in the Union Building.'],
+            ['기숙사[[가]] 여기 있어요.', 'The dormitory is here.'],
+            ['여기[[가]] 사이언스 빌딩이에요.', 'This is the Science Building.'],
+            ['시간[[이]] 없어요.', 'I do not have time.'],
+            ['컴퓨터[[가]] 좋아요.', 'I like computers.'],
+            ['물[[이]] 좋아요.', 'I like water.'],
+            ['책[[이]] 있어요.', 'There is a book.'],
+            ['미나 씨[[가]] 학생이에요.', 'Mina is a student.']
+          ] },
+        { t: '이에요/예요 — identity marker ("to be")',
+          x: 'Attached to a noun to say A is B. Use 이에요 after a consonant and 예요 after a vowel.',
+          f: ['받침 있음 + 이에요  (학생 → 학생이에요)', '받침 없음 + 예요  (친구 → 친구예요)'],
+          d: ['이에요','예요','은','는','이','가'],
+          e: [
+            ['사이언스 빌딩[[이에요]].', 'It is the Science Building.'],
+            ['김미나[[예요]].', 'I am Mina Kim.'],
+            ['BTS[[예요]].', 'It is BTS.'],
+            ['제 이름은 이한성[[이에요]].', 'My name is Hansung Lee.'],
+            ['전공이 컴퓨터 사이언스[[예요]].', 'My major is computer science.'],
+            ['여기가 도서관[[이에요]].', 'This is the library.'],
+            ['저는 학생[[이에요]].', 'I am a student.'],
+            ['저는 한국 사람[[이에요]].', 'I am Korean.'],
+            ['일 학년[[이에요]].', 'I am a freshman.'],
+            ['이름이 뭐[[예요]]?', 'What is your name?']
+          ] },
+        { t: '은/는 — topic marker',
+          x: 'Marks the topic: "as for ...". Used to introduce a topic or to contrast. Use 은 after a consonant and 는 after a vowel.',
+          f: ['받침 있음 + 은  (사람 → 사람은)', '받침 없음 + 는  (저 → 저는)'],
+          d: ['은','는','이','가','을','를'],
+          e: [
+            ['저[[는]] 이한성이에요.', 'As for me, I am Hansung.'],
+            ['그웬[[은]] 원더우먼이에요.', 'Gwen is Wonder Woman.'],
+            ['피터[[는]] 수퍼맨이에요.', 'Peter is Superman.'],
+            ['이름[[은]] 뭐예요?', 'And your name?'],
+            ['저[[는]] 컴퓨터 사이언스예요.', 'My major is computer science.'],
+            ['미나 씨[[는]] 학생이에요.', 'Mina is a student.'],
+            ['여기[[는]] 도서관이에요.', 'This place is the library.'],
+            ['저[[는]] 일 학년이에요.', 'I am a freshman.'],
+            ['한국어[[는]] 어려워요.', 'Korean is difficult.'],
+            ['오늘[[은]] 정말 좋아요.', 'Today is really good.']
+          ] },
+        { t: '도 — also / too',
+          x: '"Also, too." It replaces the subject or topic marker (이/가, 은/는). 저는 → 저도.',
+          f: ['Noun + 도  (replaces 은/는 · 이/가)'],
+          d: ['도','은','는','이','가','만'],
+          e: [
+            ['저[[도]] 컴퓨터 사이언스예요.', 'I am computer science too.'],
+            ['피터[[도]] 사람이에요.', 'Peter is a person too.'],
+            ['미나 씨[[도]] 일 학년이에요.', 'Mina is a freshman too.'],
+            ['저[[도]] 학생이에요.', 'I am a student too.'],
+            ['물[[도]] 좋아요.', 'I like water too.'],
+            ['여기[[도]] 사람이 있어요.', 'There are people here too.'],
+            ['저[[도]] 한국 사람이에요.', 'I am Korean too.'],
+            ['컴퓨터[[도]] 좋아요.', 'I like computers too.'],
+            ['내일[[도]] 시간이 있어요.', 'I have time tomorrow too.'],
+            ['미나 씨[[도]] 학생이에요.', 'Mina is a student too.']
+          ] },
+        { t: '두 가지 수 — the two number systems',
+          x: 'Sino-Korean numbers (일 이 삼 ...) are used for money, dates, phone numbers and minutes. Native Korean numbers (하나 둘 셋 ...) are used with most counters and for age.',
+          f: ['Sino: 일(1) 이(2) 삼(3) 사(4) 오(5) 육(6) 칠(7) 팔(8) 구(9) 십(10) 백(100) 천(1000) 만(10000)', 'Native: 하나(1) 둘(2) 셋(3) 넷(4) 다섯(5) 여섯(6) 일곱(7) 여덟(8) 아홉(9) 열(10) 스물(20)'],
+          d: ['일','이','삼','사','오','육','칠','팔','구','십','하나','둘','셋','다섯','여섯','열','스물'],
+          e: [
+            ['Sino 3 = [[삼]]', 'three (Sino)'],
+            ['Sino 5 = [[오]]', 'five (Sino)'],
+            ['Sino 7 = [[칠]]', 'seven (Sino)'],
+            ['Sino 10 = [[십]]', 'ten (Sino)'],
+            ['Sino 20 = [[이십]]', 'twenty (Sino)'],
+            ['Sino 100 = [[백]]', 'one hundred (Sino)'],
+            ['Native 3 = [[셋]]', 'three (Native)'],
+            ['Native 5 = [[다섯]]', 'five (Native)'],
+            ['Native 10 = [[열]]', 'ten (Native)'],
+            ['Native 20 = [[스물]]', 'twenty (Native)']
+          ] }
+      ]
+    },
+    {
+      l: 2, t: '남자 친구가 있어요?', sub: '오늘 저녁에 시간이 있어요?',
+      v: [['남자','male, man'],['친구','friend'],['오늘','today'],['저녁','evening, dinner'],['시간','time'],['어디','where'],['기숙사','dormitory'],['그런데','by the way'],['다른','another'],['약속','appointment'],['그럼','then'],['내일','tomorrow'],['테니스','tennis'],['잘','well'],['치다','to play (tennis)'],['책','book'],['읽다','to read'],['조금','a little'],['같이','together'],['좋다','to be good'],['자주','often']],
+      p: [
+        { t: '에 — location of existence',
+          x: 'Attached to a place noun to mean in/at/on, used with 있어요 / 없어요 to say where something is.',
+          f: ['장소 + 에 + 있어요/없어요  (기숙사에 있어요)'],
+          d: ['에','에서','은','는','을','를'],
+          e: [
+            ['기숙사[[에]] 있어요.', 'It is in the dormitory.'],
+            ['도서관이 유니온 빌딩[[에]] 있어요.', 'The library is in the Union Building.'],
+            ['친구가 집[[에]] 있어요.', 'My friend is at home.'],
+            ['책이 가방[[에]] 있어요.', 'The book is in the bag.'],
+            ['사이언스 빌딩이 어디[[에]] 있어요?', 'Where is the Science Building?'],
+            ['저는 학교[[에]] 있어요.', 'I am at school.'],
+            ['돈이 어디[[에]] 있어요?', 'Where is the money?'],
+            ['미나 씨가 카페[[에]] 있어요.', 'Mina is at the cafe.'],
+            ['여기[[에]] 사람이 있어요.', 'There are people here.']
+          ] },
+        { t: '에 — time marker',
+          x: 'Marks a specific time (아침에, 10시에, 저녁에). Important: with 어제 (yesterday), 오늘 (today) and 내일 (tomorrow) the 에 is not used.',
+          f: ['시간 + 에  (아침에, 10시에, 저녁에)', '어제 / 오늘 / 내일 → no 에'],
+          d: ['에','에서','는','이','을','가'],
+          e: [
+            ['아침[[에]] 시간이 있어요?', 'Do you have time in the morning?'],
+            ['10시[[에]] 친구를 만나요.', 'I meet a friend at 10 o\'clock.'],
+            ['오늘 저녁[[에]] 약속이 있어요.', 'I have an appointment this evening.'],
+            ['저녁[[에]] 뭐 해요?', 'What do you do in the evening?'],
+            ['주말[[에]] 같이 테니스를 쳐요.', 'We play tennis together on the weekend.'],
+            ['내일 저녁[[에]] 약속이 있어요.', 'I have an appointment tomorrow evening.'],
+            ['아침[[에]] 책을 읽어요.', 'I read a book in the morning.'],
+            ['10시[[에]] 기숙사에서 만나요.', 'We meet at the dormitory at 10.'],
+            ['오늘은 시간이 없어요. [[내일]]은 시간이 있어요.', 'I have no time today. I have time tomorrow.']
+          ] },
+        { t: '은/는 — contrast',
+          x: '은/는 contrasts two things: A는 ... B는 ... = "As for A ..., and as for B ...".',
+          f: ['A + 는 …, B + 는 …  (저는 …, 동생은 …)'],
+          d: ['은','는','이','가','도','만'],
+          e: [
+            ['저[[는]] 여자예요. 동생은 남자예요.', 'I am a woman. My younger sibling is a man.'],
+            ['오늘[[은]] 바빠요. 내일은 안 바빠요.', 'Today I am busy. Tomorrow I am not.'],
+            ['친구[[는]] 테니스를 좋아해요.', 'My friend likes tennis.'],
+            ['기숙사[[는]] 좋아요.', 'I like the dormitory.'],
+            ['책[[은]] 있어요. 시간은 없어요.', 'I have a book. I do not have time.'],
+            ['아침[[은]] 조금 바빠요.', 'In the morning I am a little busy.']
+          ] },
+        { t: '은/는 ~이/가 있다/없다 — "to have"',
+          x: '"To have" = owner + 은/는, thing owned + 이/가, + 있어요 / 없어요. Literally "as for me, time exists".',
+          f: ['사람 + 은/는 + 물건 + 이/가 + 있어요/없어요'],
+          d: ['이 있어요','가 있어요','이 없어요','가 없어요','이에요','예요'],
+          e: [
+            ['저는 시간[[이 있어요]].', 'I have time.'],
+            ['피터는 시간[[이 있어요]].', 'Peter has time.'],
+            ['저는 약속[[이 있어요]].', 'I have an appointment.'],
+            ['미나 씨는 남자 친구[[가 없어요]].', 'Mina does not have a boyfriend.'],
+            ['저는 오늘 시간[[이 없어요]].', 'I do not have time today.'],
+            ['기숙사에 컴퓨터[[가 있어요]].', 'There is a computer in the dormitory.'],
+            ['우리 학교는 도서관[[이 있어요]].', 'Our school has a library.'],
+            ['내일 약속[[이 있어요]].', 'I have an appointment tomorrow.'],
+            ['저는 돈[[이 없어요]].', 'I have no money.']
+          ] },
+        { t: '에서 — location of action',
+          x: '에서 marks the place where an ACTION happens. Use 에 for existence ("is at") and 에서 for action ("does at").',
+          f: ['장소 + 에서 + 동사  (도서관에서 공부해요)', '존재 → 에, 행동 → 에서'],
+          d: ['에서','에','은','는','을','를'],
+          e: [
+            ['도서관[[에서]] 책을 읽어요.', 'I read books at the library.'],
+            ['카페[[에서]] 친구를 만나요.', 'I meet a friend at the cafe.'],
+            ['기숙사[[에서]] 테니스를 쳐요.', 'I play tennis at the dormitory.'],
+            ['학교[[에서]] 한국어를 공부해요.', 'I study Korean at school.'],
+            ['집[[에서]] 조금 자요.', 'I sleep a little at home.'],
+            ['식당[[에서]] 저녁을 먹어요.', 'I eat dinner at the restaurant.'],
+            ['친구가 기숙사[[에서]] 공부해요.', 'My friend studies at the dormitory.'],
+            ['커피숍[[에서]] 커피를 마셔요.', 'I drink coffee at the coffee shop.'],
+            ['어디[[에서]] 책을 읽어요?', 'Where do you read books?']
+          ] },
+        { t: '아요/어요 — polite ending',
+          x: 'The most common polite sentence ending. If the last vowel of the stem is ㅏ or ㅗ use 아요; otherwise use 어요. 하다 becomes 해요.',
+          f: ['줄기 끝 모음 ㅏ/ㅗ → + 아요  (좋다 → 좋아요)', '그 외 → + 어요  (먹다 → 먹어요)', '하다 → 해요'],
+          d: ['아요','어요','해요','이에요','예요','없어요'],
+          e: [
+            ['좋다 → 좋[[아요]]', 'to be good → it is good'],
+            ['먹다 → 먹[[어요]]', 'to eat → I eat'],
+            ['읽다 → 읽[[어요]]', 'to read → I read'],
+            ['앉다 → 앉[[아요]]', 'to sit → I sit'],
+            ['크다 → 크[[어요]]', 'to be big → it is big'],
+            ['공부하다 → 공부[[해요]]', 'to study → I study'],
+            ['보다 → [[봐요]]', 'to see → I see'],
+            ['가다 → [[가요]]', 'to go → I go'],
+            ['마시다 → [[마셔요]]', 'to drink → I drink'],
+            ['있다 → [[있어요]]', 'to exist → there is']
+          ] },
+        { t: '을/를 — object marker',
+          x: 'Marks the object of a verb. Use 을 after a consonant and 를 after a vowel.',
+          f: ['받침 있음 + 을  (책 → 책을)', '받침 없음 + 를  (커피 → 커피를)'],
+          d: ['을','를','이','가','은','는'],
+          e: [
+            ['책[[을]] 읽어요.', 'I read a book.'],
+            ['커피[[를]] 마셔요.', 'I drink coffee.'],
+            ['테니스[[를]] 쳐요.', 'I play tennis.'],
+            ['한국어[[를]] 공부해요.', 'I study Korean.'],
+            ['저녁[[을]] 먹어요.', 'I eat dinner.'],
+            ['친구[[를]] 만나요.', 'I meet a friend.'],
+            ['컴퓨터[[를]] 좋아해요.', 'I like computers.'],
+            ['책[[을]] 자주 읽어요.', 'I read books often.'],
+            ['밥[[을]] 먹어요.', 'I eat a meal.'],
+            ['테니스[[를]] 잘 쳐요.', 'I play tennis well.']
+          ] },
+        { t: '조사 생략 — omission of markers',
+          x: 'In everyday conversation particles are often dropped when the meaning is clear: 나는 책을 읽어요 → 나 책 읽어요.',
+          f: ['particles can be dropped in casual speech'],
+          d: ['을','를','이','가','은','는'],
+          e: [
+            ['나는 책[[을]] 읽어요. (casual: 나 책 읽어요)', 'I read a book.'],
+            ['친구가 테니스[[를]] 쳐요. (casual: 친구 테니스 쳐요)', 'My friend plays tennis.'],
+            ['저는 커피[[를]] 마셔요. (casual: 저 커피 마셔요)', 'I drink coffee.'],
+            ['미나 씨가 한국어[[를]] 공부해요.', 'Mina studies Korean.'],
+            ['오늘 시간[[이]] 있어요? (casual: 오늘 시간 있어요?)', 'Do you have time today?'],
+            ['여기[[에]] 책이 있어요. (casual: 여기 책 있어요)', 'There is a book here.'],
+            ['저는 밥[[을]] 먹어요.', 'I eat a meal.'],
+            ['친구[[를]] 자주 만나요.', 'I meet my friend often.']
+          ] }
+      ]
+    },
+    {
+      l: 3, t: '같이 저녁을 먹을까요?', sub: '학교 식당이 좋아요?',
+      v: [['먹다','to eat'],['학교','school'],['식당','restaurant, cafeteria'],['하고','with ~'],['가다','to go'],['어때','how about ~'],['왜','why'],['싫다','to dislike'],['맛','taste, flavor'],['김치','kimchi'],['한국','Korea'],['거기','there'],['음식','food'],['데이트','date'],['아니다','to not be'],['인사','greeting'],['내','my'],['제','my (humble)'],['그냥','just'],['첫','first'],['빨리','quickly']],
+      p: [
+        { t: '(으)ㄹ까요? — "shall we ...?"',
+          x: 'Suggests doing something together, or asks the listener\'s opinion: "Shall we ...? What do you think?" Consonant stem + 을까요, vowel stem + ㄹ까요.',
+          f: ['받침 있음 + 을까요  (먹다 → 먹을까요)', '받침 없음 + ㄹ까요  (가다 → 갈까요)', 'ㄹ 줄기 + 까요  (살다 → 살까요)', 'ㅂ irregular → 울까요  (가깝다 → 가까울까요)'],
+          d: ['을까요','ㄹ까요','어요','해요','있어요','없어요'],
+          e: [
+            ['뭐 [[먹을까요]]?', 'What shall we eat?'],
+            ['같이 저녁을 [[먹을까요]]?', 'Shall we eat dinner together?'],
+            ['어디에 [[갈까요]]?', 'Where shall we go?'],
+            ['커피를 [[마실까요]]?', 'Shall we drink coffee?'],
+            ['영화를 [[볼까요]]?', 'Shall we watch a movie?'],
+            ['노래를 [[부를까요]]?', 'Shall we sing?'],
+            ['언제 [[만날까요]]?', 'When shall we meet?'],
+            ['여기에서 [[기다릴까요]]?', 'Shall we wait here?'],
+            ['뭐를 [[살까요]]?', 'What shall we buy?']
+          ] },
+        { t: '이/가 좋다/싫다 — to like / dislike',
+          x: 'To say you like or dislike something: [person]은/는 + [thing]이/가 + 좋아요/싫어요. The person is the topic, the thing is the subject.',
+          f: ['사람 + 은/는 + 물건 + 이/가 + 좋아요/싫어요'],
+          d: ['이 좋아요','가 좋아요','이 싫어요','가 싫어요','이 있어요','가 없어요'],
+          e: [
+            ['저는 학교 식당[[이 좋아요]].', 'I like the school cafeteria.'],
+            ['저는 김치[[가 좋아요]].', 'I like kimchi.'],
+            ['미나 씨는 커피[[가 싫어요]].', 'Mina dislikes coffee.'],
+            ['저는 이 음식[[이 좋아요]].', 'I like this food.'],
+            ['친구는 테니스[[가 좋아요]].', 'My friend likes tennis.'],
+            ['저는 한국 음식[[이 좋아요]].', 'I like Korean food.'],
+            ['저는 여기[[가 좋아요]].', 'I like it here.'],
+            ['미나 씨는 데이트[[가 싫어요]].', 'Mina dislikes dates.'],
+            ['무엇[[이 좋아요]]?', 'What do you like?']
+          ] },
+        { t: '의 — possession',
+          x: 'Marks possession: Noun1 + 의 + Noun2 = "Noun1\'s Noun2". 나의 책 = 내 책.',
+          f: ['Noun1 + 의 + Noun2  (나의 책 = 내 책)'],
+          d: ['의','에','에서','은','는','이'],
+          e: [
+            ['나[[의]] 책', 'my book'],
+            ['미나 씨[[의]] 친구', 'Mina\'s friend'],
+            ['거기[[의]] 음식', 'the food there'],
+            ['학교[[의]] 식당', 'the school cafeteria'],
+            ['한국[[의]] 음식', 'Korean food'],
+            ['친구[[의]] 컴퓨터', 'my friend\'s computer'],
+            ['미나[[의]] 데이트', 'Mina\'s date'],
+            ['학교[[의]] 도서관', 'the school library'],
+            ['한국[[의]] 김치', 'Korean kimchi']
+          ] },
+        { t: '아/어/해 — casual ending',
+          x: 'Casual (반말) ending: just drop 요 from the polite form. 좋아요 → 좋아, 읽어요 → 읽어, 해요 → 해.',
+          f: ['polite form − 요 = casual form'],
+          d: ['아','어','해','요','아요','어요'],
+          e: [
+            ['좋아요 → [[좋아]]', 'it is good (casual)'],
+            ['읽어요 → [[읽어]]', 'I read (casual)'],
+            ['해요 → [[해]]', 'I do (casual)'],
+            ['먹어요 → [[먹어]]', 'I eat (casual)'],
+            ['가요 → [[가]]', 'I go (casual)'],
+            ['봐요 → [[봐]]', 'I see (casual)'],
+            ['있어요 → [[있어]]', 'there is (casual)'],
+            ['싫어요 → [[싫어]]', 'I dislike (casual)'],
+            ['아니에요 → [[아니야]]', 'it is not (casual)']
+          ] },
+        { t: '아/야 — calling someone',
+          x: 'When you address someone by name casually, add 아 after a consonant and 야 after a vowel.',
+          f: ['받침 있음 + 아  (한성 → 한성아)', '받침 없음 + 야  (미나 → 미나야)'],
+          d: ['아','야','이','가','은','는'],
+          e: [
+            ['한성[[아]]!', 'Hey, Hansung!'],
+            ['미나[[야]]!', 'Hey, Mina!'],
+            ['준영[[아]], 같이 가.', 'Joonyoung, let\'s go together.'],
+            ['소미[[야]], 인사해.', 'Somi, say hi.'],
+            ['유진[[아]], 안녕.', 'Yujin, hi.'],
+            ['민수[[야]]!', 'Hey, Minsu!'],
+            ['미나[[야]], 뭐 해?', 'Mina, what are you doing?']
+          ] },
+        { t: '이/가 아니다 — "is not"',
+          x: 'To negate an identity: [noun]이/가 아니에요. Use 이 after a consonant and 가 after a vowel.',
+          f: ['받침 있음 + 이 아니에요', '받침 없음 + 가 아니에요'],
+          d: ['이 아니에요','가 아니에요','이에요','예요','이 없어요','가 없어요'],
+          e: [
+            ['데이트[[가 아니에요]].', 'It is not a date.'],
+            ['한성 씨는 학생[[이 아니에요]].', 'Hansung is not a student.'],
+            ['저는 한국 사람[[이 아니에요]].', 'I am not Korean.'],
+            ['이것은 커피[[가 아니에요]].', 'This is not coffee.'],
+            ['미나 씨는 선생님[[이 아니에요]].', 'Mina is not a teacher.'],
+            ['여기는 식당[[이 아니에요]].', 'This place is not a restaurant.'],
+            ['이 음식은 김치[[가 아니에요]].', 'This food is not kimchi.'],
+            ['오늘은 데이트[[가 아니에요]].', 'Today is not a date.'],
+            ['이것은 제 컴퓨터[[가 아니에요]].', 'This is not my computer.']
+          ] }
+      ]
+    },
+    {
+      l: 4, t: '마트에 가요', sub: '커피 마시러 갈까요?',
+      v: [['마트','grocery store'],['안','not'],['떡볶이','tteokbokki'],['다','all'],['만','only'],['이따가','later (today)'],['커피','coffee'],['마시다','to drink'],['걸스밴드','girls band'],['보컬','vocalist'],['맞다','to be right'],['어떻게','how'],['알다','to know'],['팬','fan'],['(이)라도','at least'],['괜찮다','to be alright'],['근처','nearby'],['카페','cafe']],
+      p: [
+        { t: '고 싶다 — "want to ..."',
+          x: 'Expresses desire: "(I) want to ...". Attach 고 싶어요 to the verb stem. For a third person use 고 싶어해요.',
+          f: ['동사 줄기 + 고 싶어요  (먹다 → 먹고 싶어요)', '3인칭 → 고 싶어해요'],
+          d: ['고 싶어요','고 싶어해요','을래요','ㄹ래요','어요','해요'],
+          e: [
+            ['떡볶이를 [[먹고 싶어요]].', 'I want to eat tteokbokki.'],
+            ['커피를 [[마시고 싶어요]].', 'I want to drink coffee.'],
+            ['여행하고 [[싶어요]].', 'I want to travel.'],
+            ['자고 [[싶어요]].', 'I want to sleep.'],
+            ['친구를 [[만나고 싶어요]].', 'I want to meet a friend.'],
+            ['한국에 [[가고 싶어요]].', 'I want to go to Korea.'],
+            ['뭐 하고 [[싶어요]]?', 'What do you want to do?'],
+            ['집에 [[가고 싶어요]].', 'I want to go home.'],
+            ['그 보컬을 [[보고 싶어요]].', 'I want to see that vocalist.']
+          ] },
+        { t: '안 — short negation',
+          x: 'Put the adverb 안 right before the verb: 안 먹어요. For N+하다 verbs, 안 goes between the noun and 하다: 공부 안 해요.',
+          f: ['안 + 동사  (안 먹어요)', 'N+하다 → N + 안 하다  (공부 안 해요)'],
+          d: ['안','못','아니','없','만','도'],
+          e: [
+            ['[[안]] 먹어요.', 'I do not eat.'],
+            ['[[안]] 자요.', 'I do not sleep.'],
+            ['학교에 [[안]] 가요.', 'I do not go to school.'],
+            ['커피를 [[안]] 마셔요.', 'I do not drink coffee.'],
+            ['공부 [[안]] 해요.', 'I do not study.'],
+            ['숙제 [[안]] 해요.', 'I do not do homework.'],
+            ['테니스를 [[안]] 쳐요.', 'I do not play tennis.'],
+            ['오늘은 [[안]] 바빠요.', 'I am not busy today.'],
+            ['그것은 [[안]] 좋아요.', 'That is not good.']
+          ] },
+        { t: '(으)ㄹ래요 — intention',
+          x: 'The speaker\'s intention ("I will / I\'m going to") or asking the listener\'s intention ("Do you want to ...?"). Consonant stem + 을래요, vowel stem + ㄹ래요.',
+          f: ['받침 있음 + 을래요  (먹다 → 먹을래요)', '받침 없음 + ㄹ래요  (가다 → 갈래요)'],
+          d: ['을래요','ㄹ래요','을까요','ㄹ까요','어요','해요'],
+          e: [
+            ['커피를 [[마실래요]].', 'I will drink coffee.'],
+            ['집에 [[갈래요]].', 'I will go home.'],
+            ['뭐 [[먹을래요]]?', 'What do you want to eat?'],
+            ['같이 [[갈래요]]?', 'Do you want to go together?'],
+            ['한국 마트에 [[갈래요]].', 'I am going to the Korean mart.'],
+            ['떡볶이를 [[먹을래요]].', 'I will eat tteokbokki.'],
+            ['지금 [[잘래요]].', 'I am going to sleep now.'],
+            ['영화를 [[볼래요]].', 'I will watch a movie.'],
+            ['커피를 [[마실래요]]?', 'Do you want to drink coffee?']
+          ] },
+        { t: '제가 / 내가 — "I" as subject',
+          x: 'When "I" is the subject: 나 + 가 → 내가 (regular), 저 + 가 → 제가 (humble).',
+          f: ['나 + 가 → 내가', '저 + 가 → 제가'],
+          d: ['제가','내가','저가','나가','저는','나는'],
+          e: [
+            ['[[제가]] 커피를 살게요.', 'I will buy the coffee.'],
+            ['[[내가]] 갈게요.', 'I will go.'],
+            ['[[제가]] 학생이에요.', 'I am the student.'],
+            ['[[내가]] 미나예요.', 'I am Mina.'],
+            ['[[제가]] 할게요.', 'I will do it.'],
+            ['[[내가]] 준영이야.', 'I am Joonyoung.'],
+            ['[[제가]] 주문할게요.', 'I will order.'],
+            ['[[내가]] 먼저 갈래요.', 'I will go first.']
+          ] },
+        { t: '(으)러 가다/오다 — "in order to ..."',
+          x: 'Verb stem + (으)러 + 가다/오다 = "go/come in order to do ...". Consonant stem + 으러, vowel stem + 러.',
+          f: ['받침 있음 + 으러  (읽다 → 읽으러)', '받침 없음 + 러  (사다 → 사러)', '…러 가요 / …러 와요'],
+          d: ['러','으러','고','서','면','자'],
+          e: [
+            ['책을 [[읽으러]] 도서관에 가요.', 'I go to the library to read books.'],
+            ['커피를 [[사러]] 카페에 가요.', 'I go to the cafe to buy coffee.'],
+            ['공부[[하러]] 학교에 가요.', 'I go to school to study.'],
+            ['친구를 [[만나러]] 카페에 가요.', 'I go to the cafe to meet a friend.'],
+            ['점심을 [[먹으러]] 식당에 가요.', 'I go to the restaurant to eat lunch.'],
+            ['뭐 [[하러]] 와요?', 'What did you come here to do?'],
+            ['밥을 [[먹으러]] 집에 가요.', 'I go home to eat.'],
+            ['영화를 [[보러]] 갈래요.', 'I want to go see a movie.'],
+            ['한국 음식을 [[사러]] 마트에 가요.', 'I go to the mart to buy Korean food.']
+          ] },
+        { t: '자 — "let\'s ..."',
+          x: 'A casual suggestion: attach 자 to the verb stem. 밥 먹자, 공부하자.',
+          f: ['동사 줄기 + 자  (먹다 → 먹자)'],
+          d: ['자','요','어','아','까요','래요'],
+          e: [
+            ['밥 [[먹자]].', 'Let\'s eat.'],
+            ['공부[[하자]].', 'Let\'s study.'],
+            ['같이 [[가자]].', 'Let\'s go together.'],
+            ['커피 [[마시자]].', 'Let\'s drink coffee.'],
+            ['여기에서 [[기다리자]].', 'Let\'s wait here.'],
+            ['이따가 [[만나자]].', 'Let\'s meet later.'],
+            ['다 같이 [[놀자]].', 'Let\'s all hang out.'],
+            ['한국 마트에 [[가자]].', 'Let\'s go to the Korean mart.']
+          ] }
+      ]
+    },
+    {
+      l: 5, t: '눈꽃빙수를 먹어볼게요', sub: '커피 두 잔 주세요',
+      v: [['비슷하다','to be similar'],['너희','you (plural)'],['커플','couple'],['이상형','ideal type'],['두','two'],['잔','cup (counter)'],['돈','money'],['사다','to buy'],['아무것','anything'],['주문하다','to order'],['배고프다','to be hungry'],['사귀다','to date'],['망고','mango'],['주스','juice'],['눈꽃빙수','snowflake bingsu'],['유명하다','to be famous'],['쉐이브아이스','shaved ice']],
+      p: [
+        { t: '아/어/해 보다 — "try doing"',
+          x: 'Verb stem + 아/어/해 보다 means "try doing ...". Often used as ~아/어 봐요 ("try it").',
+          f: ['아/어 + 보다  (먹다 → 먹어 봐요)', '하다 → 해 보다  (운동하다 → 운동해 봐요)'],
+          d: ['어 봐요','아 봐요','해 봐요','어요','아요','봐요'],
+          e: [
+            ['이거 한번 [[먹어 봐요]].', 'Try eating this once.'],
+            ['운동 [[해 봐요]].', 'Try exercising.'],
+            ['저도 [[먹어 봤어요]].', 'I tried it too.'],
+            ['한국 음식을 [[먹어 봐요]].', 'Try Korean food.'],
+            ['준영 씨하고 [[사귀어 봐요]].', 'Try dating Joonyoung.'],
+            ['이 커피를 [[마셔 봐요]].', 'Try this coffee.'],
+            ['노래를 [[불러 봐요]].', 'Try singing.'],
+            ['다시 [[해 봐요]].', 'Try again.']
+          ] },
+        { t: '았/었/했 — past tense',
+          x: 'Past tense: replace 요 of the polite form with ㅆ어요. 가요 → 갔어요, 먹어요 → 먹었어요, 해요 → 했어요. Exception: 이다 → 이었어요 / 였어요.',
+          f: ['-아요 → -았어요, -어요 → -었어요, -해요 → -했어요', '이다 → 이었어요 / 였어요'],
+          d: ['았어요','었어요','했어요','어요','아요','이에요'],
+          e: [
+            ['가다 → [[갔어요]]', 'to go → went'],
+            ['먹다 → [[먹었어요]]', 'to eat → ate'],
+            ['보다 → [[봤어요]]', 'to see → saw'],
+            ['하다 → [[했어요]]', 'to do → did'],
+            ['읽다 → [[읽었어요]]', 'to read → read (past)'],
+            ['좋다 → [[좋았어요]]', 'to be good → was good'],
+            ['있다 → [[있었어요]]', 'to exist → was there'],
+            ['학생이다 → 학생[[이었어요]]', 'was a student'],
+            ['친구이다 → 친구[[였어요]]', 'was a friend'],
+            ['마시다 → [[마셨어요]]', 'to drink → drank']
+          ] },
+        { t: '(으)ㄹ게요 — "I will ..."',
+          x: 'The speaker\'s promise/intention, used only in statements. Consonant stem + 을게요, vowel stem + ㄹ게요.',
+          f: ['받침 있음 + 을게요  (먹다 → 먹을게요)', '받침 없음 + ㄹ게요  (가다 → 갈게요)'],
+          d: ['을게요','ㄹ게요','을래요','ㄹ래요','을까요','ㄹ까요'],
+          e: [
+            ['갈비를 [[먹을게요]].', 'I will eat the ribs.'],
+            ['게임을 [[할게요]].', 'I will play the game.'],
+            ['제가 [[살게요]].', 'I will buy it.'],
+            ['커피를 [[마실게요]].', 'I will drink coffee.'],
+            ['제가 [[주문할게요]].', 'I will order.'],
+            ['잘 [[잘게요]].', 'I will sleep well.'],
+            ['눈꽃빙수를 [[먹어볼게요]].', 'I will try the bingsu.'],
+            ['제가 [[준비할게요]].', 'I will prepare it.'],
+            ['이따가 [[갈게요]].', 'I will go later.']
+          ] },
+        { t: '지요? — "... right?"',
+          x: 'A confirmation tag: "..., right? / isn\'t it?" Attach 지요? (often shortened to 죠?) to the verb stem.',
+          f: ['동사 줄기 + 지요?  (괜찮다 → 괜찮지요?)'],
+          d: ['지요','죠','네요','군요','어요','해요'],
+          e: [
+            ['학생[[이지요]]?', 'You are a student, right?'],
+            ['괜찮[[지요]]?', 'It is fine, right?'],
+            ['맞[[지요]]?', 'Right? / Correct, right?'],
+            ['좋[[지요]]?', 'Good, right?'],
+            ['한국 사람[[이지요]]?', 'You are Korean, right?'],
+            ['커피 [[마시지요]]?', 'Shall we drink coffee?'],
+            ['여기 [[맞지요]]?', 'This is the right place, right?'],
+            ['오늘 시간 [[있지요]]?', 'You have time today, right?']
+          ] },
+        { t: '수 세기 — counting & counters',
+          x: 'Noun + Number(native) + counter: 사과 한 개, 커피 두 잔, 학생 세 명. Before a counter: 하나→한, 둘→두, 셋→세, 넷→네.',
+          f: ['Noun + 숫자 + 단위  (사과 한 개)', '하나→한, 둘→두, 셋→세, 넷→네'],
+          d: ['한','두','세','네','다섯','여섯','스물'],
+          e: [
+            ['커피 [[두]] 잔 주세요.', 'Two cups of coffee, please.'],
+            ['사과 [[한]] 개', 'one apple'],
+            ['학생 [[세]] 명', 'three students'],
+            ['고양이 [[네]] 마리', 'four cats'],
+            ['책 [[다섯]] 권', 'five books'],
+            ['커피 [[한]] 잔 주세요.', 'One cup of coffee, please.'],
+            ['친구가 [[두]] 명 있어요.', 'I have two friends.'],
+            ['눈꽃빙수 [[네]] 개 주문할게요.', 'I will order four bingsus.']
+          ] }
+      ]
+    },
+    {
+      l: 6, t: '주말에 같이 놀러 갈래요?', sub: '난 롤러코스터를 탈래',
+      v: [['주말','weekend'],['놀다','to play, hang out'],['서울랜드','Seoul Land'],['물론','of course'],['솔로','single'],['책임지다','to take care of'],['믿다','to believe'],['롤러코스터','roller coaster'],['타다','to ride'],['바이킹','viking ride'],['꼭','surely'],['옆','beside'],['토요일','Saturday'],['근데','by the way'],['파트너','partner'],['정하다','to decide'],['누구','who'],['사랑','love'],['관람차','Ferris wheel'],['안','inside']],
+      p: [
+        { t: '난 / 넌 / 전 — short forms',
+          x: 'Short forms of 나는 / 너는 / 저는: keep the pronoun and add ㄴ (from 는). 나는 → 난, 너는 → 넌, 저는 → 전.',
+          f: ['나는 → 난', '너는 → 넌', '저는 → 전'],
+          d: ['난','넌','전','나','너','저'],
+          e: [
+            ['[[난]] 롤러코스터를 탈래.', 'I am going to ride the roller coaster.'],
+            ['[[넌]] 뭐야?', 'What are you?'],
+            ['[[전]] 솔로도 괜찮아요.', 'I am okay with being single too.'],
+            ['[[난]] 바이킹을 탈래.', 'I am going to ride the viking.'],
+            ['[[넌]] 뭐 먹을래?', 'What do you want to eat?'],
+            ['[[전]] 주말에 시간이 있어요.', 'I have time on the weekend.'],
+            ['[[넌]] 누구야?', 'Who are you?'],
+            ['[[난]] 안 갈래.', 'I am not going.']
+          ] },
+        { t: '잖아요 — "as you know / didn\'t I tell you"',
+          x: 'Explains the reason or reminds the listener: "As you may know ..., that is why" or "Didn\'t you know that ...?" Attach 잖아요 to the verb stem.',
+          f: ['동사 줄기 + 잖아요  (있다 → 있잖아요)'],
+          d: ['잖아요','지요','네요','군요','어요','해요'],
+          e: [
+            ['걔 [[있잖아요]].', 'You know that person, right?'],
+            ['내 친구 소미가 여기 [[있잖아요]].', 'My friend Somi is here, you know.'],
+            ['파트너 다 [[정했잖아]].', 'We already decided the partners, remember?'],
+            ['제가 [[말했잖아요]].', 'I told you, didn\'t I?'],
+            ['오늘 [[토요일이잖아요]].', 'It is Saturday today, you know.'],
+            ['이거 [[맛있잖아요]].', 'This is delicious, as you know.'],
+            ['너도 [[알잖아요]].', 'You know it too.'],
+            ['우리 [[친구잖아요]].', 'We are friends, right?'],
+            ['[[괜찮잖아요]].', 'It is fine, isn\'t it?']
+          ] },
+        { t: '위치 명사 — position words',
+          x: 'Position words: 앞 (front), 뒤 (back), 옆 (side), 위 (top), 아래/밑 (bottom), 안 (inside), 오른쪽 (right), 왼쪽 (left). Attach 에 to them: 책상 위에.',
+          f: ['N + 위치 + 에  (준영이 옆에, 책상 위에)'],
+          d: ['옆','앞','뒤','위','아래','안'],
+          e: [
+            ['준영이 [[옆]]에 앉을래요.', 'I will sit next to Joonyoung.'],
+            ['책이 책상 [[위]]에 있어요.', 'The book is on the desk.'],
+            ['고양이가 의자 [[아래]]에 있어요.', 'The cat is under the chair.'],
+            ['카페가 학교 [[앞]]에 있어요.', 'The cafe is in front of the school.'],
+            ['관람차 [[안]]에서 먹을래.', 'I will eat inside the Ferris wheel.'],
+            ['기숙사 [[뒤]]에 도서관이 있어요.', 'The library is behind the dormitory.'],
+            ['제 [[옆]]에 앉아요.', 'Sit next to me.'],
+            ['가방이 문 [[옆]]에 있어요.', 'The bag is beside the door.'],
+            ['우리 집 [[앞]]에서 만나요.', 'Let us meet in front of my house.']
+          ] },
+        { t: '이 — casually referring to someone',
+          x: 'When referring to a person casually, attach 이 to their name (usually about a third person). A subject marker then follows: 준영이 + 가 → 준영이가.',
+          f: ['이름 + 이 (+ 가/는 …)  (준영 → 준영이가)'],
+          d: ['이','가','아','야','은','는'],
+          e: [
+            ['준영[[이]]가 바이킹을 탈까?', 'Do you think Joonyoung will ride the viking?'],
+            ['유진[[이]]가 커피를 살래.', 'Yujin is going to buy coffee.'],
+            ['한성[[이]]는 롤러코스터를 탈래.', 'Hansung will ride the roller coaster.'],
+            ['소미가 준영[[이]]를 책임질게.', 'Somi will take care of Joonyoung.'],
+            ['유진[[이]]가 와요.', 'Yujin is coming.'],
+            ['한성[[이]]하고 같이 가요.', 'I am going with Hansung.'],
+            ['준영[[이]]가 내 파트너야.', 'Joonyoung is my partner.'],
+            ['유진[[이]]가 어디 있어?', 'Where is Yujin?']
+          ] }
+      ]
+    }
+  ];
+  </script>
+
+  <!-- ================================================================= -->
   <!--                            APP                                     -->
   <!-- ================================================================= -->
   <script>
@@ -828,6 +1467,9 @@
       voiceName: '',
       voiceRate: 0.9,
       composing: false,
+      view: 'typing',        // 'typing' | 'grammar'
+      gprog: {},             // grammar progress: { pointId: { done, best } }
+      gpoint: null,          // currently open grammar point id
       words: [],
       typed: [],
       cursor: 0,
@@ -901,7 +1543,7 @@
 
       render();
       updateTicker();
-      if (!panelOpen) capture.focus({ preventScroll: true });
+      if (!panelOpen && state.view === 'typing') capture.focus({ preventScroll: true });
       speakActive();
     }
 
@@ -1407,7 +2049,7 @@
     capture.addEventListener('compositionend', () => { state.composing = false; render(); });
 
     capture.addEventListener('keydown', (e) => {
-      if (state.inputMode !== 'system') return;   // built-in IME handles keys itself
+      if (state.inputMode !== 'system' || state.view !== 'typing') return;   // built-in IME handles keys itself
       if (e.key === 'Backspace' && capture.value === '' && !e.isComposing && state.cursor > 0
           && state.status !== 'finished') {
         state.cursor--;
@@ -1425,6 +2067,7 @@
         if (e.key === 'Escape') { e.preventDefault(); setPanel(false); }
         return;
       }
+      if (state.view !== 'typing') return;
       // global restart shortcuts
       if (e.key === 'Tab' || e.key === 'Enter') {
         if (state.status === 'finished') { e.preventDefault(); newTest(false); return; }
@@ -1480,7 +2123,7 @@
 
     // click / tap to focus
     document.addEventListener('mousedown', (e) => {
-      if (state.status === 'finished' || panelOpen) return;
+      if (state.status === 'finished' || panelOpen || state.view !== 'typing') return;
       if (e.target.closest('#results') || e.target.closest('select')) return;
       capture.focus({ preventScroll: true });
     });
@@ -1820,6 +2463,7 @@
           theme: state.theme, length: state.length, tier: state.tier,
           showMeaning: state.showMeaning, inputMode: state.inputMode, showKeyboard: state.showKeyboard,
           speakWords: state.speakWords, voiceName: state.voiceName, voiceRate: state.voiceRate,
+          gprog: state.gprog, view: state.view,
         }));
       } catch (e) { /* storage unavailable — ignore */ }
     }
@@ -1837,6 +2481,8 @@
         if (typeof s.speakWords === 'boolean') state.speakWords = s.speakWords;
         if (typeof s.voiceName === 'string') state.voiceName = s.voiceName;
         if (typeof s.voiceRate === 'number' && s.voiceRate >= 0.5 && s.voiceRate <= 2) state.voiceRate = s.voiceRate;
+        if (s.gprog && typeof s.gprog === 'object') state.gprog = s.gprog;
+        if (s.view === 'grammar' || s.view === 'typing') state.view = s.view;
       } catch (e) { /* corrupted storage — ignore */ }
     }
 
@@ -1873,6 +2519,247 @@
       }
     }
 
+    /* =================================================================
+       GRAMMAR MODE
+       ================================================================= */
+    const GPOINTS = [];
+    GRAMMAR.forEach(function (les, li) {
+      les.p.forEach(function (pt, pi) {
+        GPOINTS.push({ id: 'l' + les.l + '-' + (pi + 1), lesson: les, li: li, pi: pi, pt: pt });
+      });
+    });
+    let quizState = null;
+
+    function gDone(id) { return !!(state.gprog && state.gprog[id] && state.gprog[id].done); }
+    function gBest(id) { return (state.gprog && state.gprog[id] && state.gprog[id].best) || 0; }
+    function gUnlocked(idx) { return idx === 0 || gDone(GPOINTS[idx - 1].id); }
+    function gCurrentIndex() {
+      for (let i = 0; i < GPOINTS.length; i++) if (!gDone(GPOINTS[i].id)) return i;
+      return GPOINTS.length - 1;
+    }
+    function gkTarget(ko) { const m = /\[\[(.+?)\]\]/.exec(ko); return m ? m[1] : ''; }
+    function gkPlain(ko) { return ko.replace(/\[\[|\]\]/g, ''); }
+    function gkMarked(ko) { return esc(ko).replace(/\[\[(.+?)\]\]/g, '<span class="g-target">$1</span>'); }
+    function gkBlank(ko) { return esc(ko).replace(/\[\[(.+?)\]\]/g, '<span class="g-blank">?</span>'); }
+
+    function renderPath() {
+      let h = '';
+      GRAMMAR.forEach(function (les) {
+        let doneCount = 0;
+        les.p.forEach(function (pt, pi) { if (gDone('l' + les.l + '-' + (pi + 1))) doneCount++; });
+        h += '<div class="rounded-xl border border-line/50 bg-panel/30 p-3">' +
+               '<div class="flex items-baseline justify-between gap-2 mb-2 px-1">' +
+                 '<div class="text-text text-sm truncate">Lesson ' + les.l + ' <span class="text-sub/50">· ' + esc(les.t) + '</span></div>' +
+                 '<div class="text-[10px] text-sub/50 shrink-0">' + doneCount + '/' + les.p.length + '</div>' +
+               '</div><div class="space-y-1">';
+        les.p.forEach(function (pt, pi) {
+          const id = 'l' + les.l + '-' + (pi + 1);
+          const idx = GPOINTS.findIndex(function (g) { return g.id === id; });
+          const unlocked = gUnlocked(idx);
+          const icon = gDone(id) ? '✓' : (unlocked ? '○' : '🔒');
+          h += '<div class="gp-item' + (state.gpoint === id ? ' active' : '') + (unlocked ? '' : ' locked') + '" data-gp="' + id + '">' +
+                 '<span class="w-4 text-center shrink-0">' + icon + '</span>' +
+                 '<span class="truncate">' + esc(pt.t) + '</span></div>';
+        });
+        h += '</div></div>';
+      });
+      $('grammarPath').innerHTML = h;
+
+      const total = GPOINTS.length;
+      const doneTotal = GPOINTS.filter(function (g) { return gDone(g.id); }).length;
+      $('gProgressText').textContent = doneTotal + ' / ' + total;
+      $('gProgressBar').style.width = (total ? Math.round(doneTotal / total * 100) : 0) + '%';
+    }
+
+    function renderPoint(id) {
+      const g = GPOINTS.filter(function (x) { return x.id === id; })[0];
+      if (!g) return;
+      state.gpoint = id;
+      const les = g.lesson, pt = g.pt, done = gDone(id);
+
+      let h = '<div class="text-[11px] uppercase tracking-[0.2em] text-sub/50 mb-1">Lesson ' + les.l + ' · ' + esc(les.t) + '</div>';
+      h += '<h2 class="text-text text-2xl mb-3">' + esc(pt.t) + '</h2>';
+      h += '<p class="text-sub leading-relaxed mb-5 max-w-3xl">' + esc(pt.x) + '</p>';
+
+      h += '<div class="mb-6"><div class="text-[11px] uppercase tracking-wider text-sub/50 mb-2">how to form</div><ul class="space-y-1.5">';
+      pt.f.forEach(function (f) {
+        h += '<li class="flex gap-2 text-sm text-text/90"><span class="text-main shrink-0">▸</span><span>' + esc(f) + '</span></li>';
+      });
+      h += '</ul></div>';
+
+      h += '<div class="mb-6"><div class="text-[11px] uppercase tracking-wider text-sub/50 mb-2">lesson ' + les.l + ' vocabulary</div><div class="flex flex-wrap gap-1.5">';
+      les.v.forEach(function (p) {
+        h += '<span class="text-xs px-2 py-1 rounded-md bg-panel border border-line/50"><span class="text-text">' + esc(p[0]) + '</span> <span class="text-sub/60">' + esc(p[1]) + '</span></span>';
+      });
+      h += '</div></div>';
+
+      h += '<div class="flex flex-wrap items-center gap-4 mb-7">' +
+             '<button id="gPractice" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">' + (done ? 'practice again' : 'start practice') + '</button>' +
+             (done ? '<span class="text-xs text-main">✓ completed · best ' + gBest(id) + '%</span>'
+                   : '<span class="text-xs text-sub/50">answer at least 80% to unlock the next point</span>') +
+           '</div>';
+
+      h += '<div class="text-[11px] uppercase tracking-wider text-sub/50 mb-3">examples (' + pt.e.length + ') · click to hear</div>';
+      h += '<div class="space-y-2.5" id="gExamples">';
+      pt.e.forEach(function (ex, i) {
+        h += '<div class="g-ex py-1 cursor-pointer" data-ex="' + i + '" title="click to hear">' +
+               '<div class="text-lg">' + gkMarked(ex[0]) + '</div>' +
+               '<div class="g-en text-sm mt-0.5">' + esc(ex[1]) + '</div></div>';
+      });
+      h += '</div>';
+
+      $('grammarContent').innerHTML = h;
+      $('gPractice').addEventListener('click', function () { startPractice(id); });
+      $('gExamples').querySelectorAll('.g-ex').forEach(function (el) {
+        el.addEventListener('click', function () { speak(gkPlain(pt.e[Number(el.dataset.ex)][0])); });
+      });
+      renderPath();
+    }
+
+    function startPractice(id) {
+      const g = GPOINTS.filter(function (x) { return x.id === id; })[0];
+      if (!g) return;
+      state.gpoint = id;
+      const qs = shuffle(g.pt.e.slice()).map(function (ex) {
+        const answer = gkTarget(ex[0]);
+        const wrong = shuffle(g.pt.d.filter(function (x) { return x !== answer; })).slice(0, 3);
+        return { ko: ex[0], en: ex[1], answer: answer, options: shuffle([answer].concat(wrong)) };
+      });
+      quizState = { id: id, qs: qs, i: 0, score: 0, answered: false, results: [] };
+      renderPath();
+      renderQuiz();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderQuiz() {
+      if (!quizState) return;
+      const total = quizState.qs.length;
+      if (quizState.i >= total) { renderQuizResult(); return; }
+      const q = quizState.qs[quizState.i];
+      const exitId = quizState.id;
+
+      let h = '<div class="flex items-center justify-between mb-4">' +
+                '<button id="gExit" class="text-xs text-sub hover:text-text">← exit</button>' +
+                '<div class="text-xs text-sub/50">' + (quizState.i + 1) + ' / ' + total + '</div></div>';
+      h += '<div class="h-1.5 w-full bg-line/40 rounded-full overflow-hidden mb-7"><div class="h-full bg-main transition-all duration-300" style="width:' + Math.round(quizState.i / total * 100) + '%"></div></div>';
+      h += '<div class="text-[11px] uppercase tracking-wider text-sub/50 mb-2">choose the right form</div>';
+      h += '<div class="text-sub mb-1">' + esc(q.en) + '</div>';
+      h += '<div class="text-2xl mb-7 leading-relaxed">' + gkBlank(q.ko) + '</div>';
+      h += '<div class="flex flex-wrap gap-2" id="gOptions">';
+      q.options.forEach(function (o, i) { h += '<button class="g-opt" data-opt="' + i + '">' + esc(o) + '</button>'; });
+      h += '</div><div id="gFb" class="mt-6 text-sm min-h-[3rem]"></div>';
+
+      $('grammarContent').innerHTML = h;
+      $('gExit').addEventListener('click', function () { quizState = null; renderPoint(exitId); });
+      $('gOptions').querySelectorAll('.g-opt').forEach(function (btn) {
+        btn.addEventListener('click', function () { answerQuiz(Number(btn.dataset.opt)); });
+      });
+    }
+
+    function answerQuiz(optIndex) {
+      if (!quizState || quizState.answered) return;
+      const q = quizState.qs[quizState.i];
+      quizState.answered = true;
+      const chosen = q.options[optIndex];
+      const correct = chosen === q.answer;
+      if (correct) quizState.score++;
+      quizState.results.push({ ko: gkPlain(q.ko), en: q.en, answer: q.answer, chosen: chosen, correct: correct });
+
+      $('gOptions').querySelectorAll('.g-opt').forEach(function (b, i) {
+        b.disabled = true;
+        if (q.options[i] === q.answer) b.classList.add('correct');
+        else if (i === optIndex) b.classList.add('wrong');
+      });
+
+      const last = quizState.i + 1 >= quizState.qs.length;
+      $('gFb').innerHTML =
+        '<div class="flex items-start justify-between gap-4">' +
+          '<div>' +
+            (correct ? '<span class="text-main">✓ correct</span>'
+                     : '<span class="text-error">✗</span> <span class="text-sub/70">answer:</span> <span class="text-main">' + esc(q.answer) + '</span>') +
+            '<div class="text-sub/60 text-xs mt-1">' + esc(gkPlain(q.ko)) + '</div>' +
+          '</div>' +
+          '<button id="gNext" class="shrink-0 px-5 py-2 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">' + (last ? 'finish' : 'next') + '</button>' +
+        '</div>';
+      $('gNext').addEventListener('click', function () {
+        quizState.answered = false;
+        quizState.i++;
+        renderQuiz();
+      });
+    }
+
+    function renderQuizResult() {
+      const total = quizState.qs.length;
+      const pct = Math.round(quizState.score / total * 100);
+      const passed = pct >= 80;
+      const id = quizState.id;
+
+      if (passed) {
+        if (!state.gprog[id]) state.gprog[id] = {};
+        state.gprog[id].done = true;
+        state.gprog[id].best = Math.max(gBest(id), pct);
+        saveSettings();
+      }
+
+      let h = '<div class="text-center py-6">' +
+                '<div class="text-[11px] uppercase tracking-[0.3em] text-sub/50 mb-3">practice complete</div>' +
+                '<div class="text-6xl ' + (passed ? 'text-main' : 'text-error') + ' mb-2">' + pct + '%</div>' +
+                '<div class="text-sub mb-6">' + quizState.score + ' / ' + total + ' correct' +
+                  (passed ? ' · unlocked next point' : ' · need 80% to unlock the next point') + '</div>' +
+                '<div class="flex flex-wrap items-center justify-center gap-3">' +
+                  '<button id="gRetry" class="px-5 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">try again</button>' +
+                  (passed ? '<button id="gNextPoint" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">next point →</button>' : '') +
+                '</div></div>';
+
+      h += '<div class="mt-8 text-[11px] uppercase tracking-wider text-sub/50 mb-3">review</div><div class="space-y-1.5">';
+      quizState.results.forEach(function (r) {
+        h += '<div class="flex items-start gap-3 text-sm px-3 py-2 rounded-lg ' + (r.correct ? '' : 'bg-error/10') + '">' +
+               '<span class="' + (r.correct ? 'text-main' : 'text-error') + '">' + (r.correct ? '✓' : '✗') + '</span>' +
+               '<div><div class="text-text">' + esc(r.ko) + '</div><div class="text-sub/60 text-xs">' + esc(r.en) + '</div></div></div>';
+      });
+      h += '</div>';
+
+      $('grammarContent').innerHTML = h;
+      $('gRetry').addEventListener('click', function () { startPractice(id); });
+      const nxt = $('gNextPoint');
+      if (nxt) nxt.addEventListener('click', function () {
+        const idx = GPOINTS.findIndex(function (g) { return g.id === id; });
+        renderPoint(GPOINTS[Math.min(idx + 1, GPOINTS.length - 1)].id);
+      });
+      renderPath();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function setView(v) {
+      state.view = (v === 'grammar') ? 'grammar' : 'typing';
+      const isTyping = state.view === 'typing';
+      $('typingView').classList.toggle('hidden', !isTyping);
+      $('grammarView').classList.toggle('hidden', isTyping);
+      $('tabTyping').classList.toggle('active', isTyping);
+      $('tabGrammar').classList.toggle('active', !isTyping);
+      if (isTyping) {
+        if (!panelOpen) capture.focus({ preventScroll: true });
+      } else {
+        stopSpeech();
+        if (capture.blur) capture.blur();
+        renderPath();
+        if (!state.gpoint) {
+          const idx = gCurrentIndex();
+          if (GPOINTS[idx]) renderPoint(GPOINTS[idx].id);
+        }
+      }
+      saveSettings();
+    }
+
+    $('tabTyping').addEventListener('click', function () { setView('typing'); });
+    $('tabGrammar').addEventListener('click', function () { setView('grammar'); });
+    $('grammarPath').addEventListener('click', function (e) {
+      const item = e.target.closest('[data-gp]');
+      if (!item || item.classList.contains('locked')) return;
+      renderPoint(item.dataset.gp);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
     /* ---------------- boot ---------------- */
     loadSettings();
     buildThemeGrid();
@@ -1883,6 +2770,7 @@
     applyTheme(state.theme);
     syncSettings();
     newTest(false);
+    setView(state.view);
   })();
   </script>
 </body>
