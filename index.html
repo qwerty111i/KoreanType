@@ -2748,8 +2748,12 @@
 
       let h = '<div class="max-w-3xl">';
       h += '<div class="text-[11px] uppercase tracking-[0.2em] text-sub/40 mb-2">Lesson ' + les.l + ' · ' + esc(les.t) + '</div>';
-      h += '<h2 class="text-text text-3xl mb-4">' + esc(pt.t) + '</h2>';
-      if (done) h += '<div class="text-[11px] uppercase tracking-wider text-main -mt-2 mb-4">✓ mastered</div>';
+      h += '<div class="flex items-start justify-between gap-4 mb-4">';
+      h += '<h2 class="text-text text-3xl">' + esc(pt.t) + '</h2>';
+      h += '<button id="gMark" title="' + (done ? 'Click to undo' : 'Mark this section complete') + '" class="shrink-0 mt-1 text-xs ' +
+           (done ? 'text-main' : 'text-sub/40 hover:text-main') + ' transition">' +
+           (done ? '✓ complete — undo' : 'mark complete') + '</button>';
+      h += '</div>';
       h += '<p class="text-sub leading-relaxed mb-8">' + esc(pt.x) + '</p>';
 
       h += '<div class="mb-8"><div class="text-[11px] uppercase tracking-wider text-sub/40 mb-3">how to form</div><ul class="space-y-2">';
@@ -2775,6 +2779,13 @@
       h += '</div>';
 
       $('grammarContent').innerHTML = h;
+
+      $('gMark').addEventListener('click', function () {
+        if (!state.gprog[id]) state.gprog[id] = { best: 0 };
+        state.gprog[id].mastered = !state.gprog[id].mastered;
+        saveSettings();
+        renderPoint(id);
+      });
 
       $('grammarContent').querySelectorAll('[data-gtab]').forEach(function (b) {
         b.addEventListener('click', function () {
