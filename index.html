@@ -284,97 +284,60 @@
         </nav>
       </div>
 
-      <!-- live ticker + settings (Monkeytype places the gear top-right) -->
-      <div class="flex items-center gap-6">
-        <div class="flex items-center gap-6 text-sm">
-          <div class="text-center">
-            <div class="text-[10px] uppercase tracking-wider text-sub/70">wpm</div>
-            <div id="tWpm" class="text-main text-lg leading-none">0</div>
-          </div>
-          <div class="text-center">
-            <div class="text-[10px] uppercase tracking-wider text-sub/70">acc</div>
-            <div id="tAcc" class="text-main text-lg leading-none">--</div>
-          </div>
-          <div class="text-center">
-            <div class="text-[10px] uppercase tracking-wider text-sub/70">time</div>
-            <div id="tTime" class="text-text text-lg leading-none">0:00</div>
-          </div>
-          <div class="text-center">
-            <div class="text-[10px] uppercase tracking-wider text-sub/70">left</div>
-            <div id="tLeft" class="text-text text-lg leading-none">0</div>
-          </div>
-        </div>
-
-        <button id="openSettings" class="text-sub hover:text-text transition p-2 rounded-lg hover:bg-panel" title="Settings" aria-label="Settings">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="3"></circle>
-            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
-          </svg>
-        </button>
-      </div>
+      <!-- settings (Monkeytype places the gear top-right) -->
+      <button id="openSettings" class="text-sub hover:text-text transition p-2 rounded-lg hover:bg-panel shrink-0" title="Settings" aria-label="Settings">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
     </div>
   </header>
 
   <!-- =====================  MAIN  ===================== -->
   <main id="typingView" class="max-w-4xl mx-auto px-6 flex flex-col items-center">
 
-    <!-- settings bar -->
-    <div class="w-full flex flex-wrap items-center justify-center gap-x-6 gap-y-3 py-4 mb-4
-                bg-panel/40 border border-line/60 rounded-xl px-5 text-sm">
-
-      <!-- word count -->
-      <div class="flex items-center gap-1">
-        <span class="text-sub/60 mr-2 text-xs uppercase tracking-wider">words</span>
+    <!-- test options -->
+    <div class="w-full flex flex-wrap items-center justify-center gap-x-6 gap-y-2 py-2.5 mb-9
+                bg-panel/30 border border-line/40 rounded-xl px-4 text-sm">
+      <div class="flex items-center gap-0.5">
+        <span class="text-sub/50 mr-1.5 text-[11px] uppercase tracking-wider">words</span>
         <button class="pill-btn" data-len="10">10</button>
         <button class="pill-btn" data-len="25">25</button>
         <button class="pill-btn" data-len="50">50</button>
       </div>
-
-      <div class="hidden sm:block w-px h-5 bg-line"></div>
-
-      <!-- tier -->
       <div class="flex items-center gap-2">
-        <span class="text-sub/60 text-xs uppercase tracking-wider">list</span>
+        <span class="text-sub/50 text-[11px] uppercase tracking-wider">list</span>
         <select id="tierSelect"
-          class="bg-bg border border-line text-sub rounded-lg text-xs px-2 py-1.5 outline-none
+          class="bg-transparent border border-line/60 text-sub rounded-md text-xs px-2 py-1 outline-none
                  hover:text-text focus:text-text focus:border-main/50 cursor-pointer">
           <option value="100">Top 100 · Most Common</option>
           <option value="200">Top 200 · Common</option>
           <option value="500">Top 500 · TOPIK Level 1</option>
         </select>
       </div>
+      <button id="meaningToggle" class="pill-btn active">meaning</button>
+      <button id="restartBtn" class="pill-btn">restart</button>
+    </div>
 
-      <div class="hidden sm:block w-px h-5 bg-line"></div>
-
-      <!-- meaning toggle -->
-      <button id="meaningToggle" class="pill-btn active flex items-center gap-1.5">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="3"></circle>
-        </svg>
-        <span>meaning</span>
-      </button>
-
-      <div class="hidden sm:block w-px h-5 bg-line"></div>
-
-      <!-- voice toggle -->
-      <button id="voiceToggle" class="pill-btn flex items-center gap-1.5" title="Hear each word before typing">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M11 5 6 9H2v6h4l5 4V5z"></path>
-          <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
-          <path d="M19 5a9 9 0 0 1 0 14"></path>
-        </svg>
-        <span>voice</span>
-      </button>
-
-      <div class="hidden sm:block w-px h-5 bg-line"></div>
-
-      <!-- restart -->
-      <button id="restartBtn" class="pill-btn flex items-center gap-1.5" title="Restart (Esc)">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path>
-        </svg>
-        <span>restart</span>
-      </button>
+    <!-- live stats -->
+    <div class="flex items-end justify-center gap-7 sm:gap-10 mb-8 select-none">
+      <div class="text-center">
+        <div id="tWpm" class="text-main text-2xl leading-none">0</div>
+        <div class="text-[10px] uppercase tracking-wider text-sub/40 mt-1.5">wpm</div>
+      </div>
+      <div class="text-center">
+        <div id="tAcc" class="text-main text-2xl leading-none">--</div>
+        <div class="text-[10px] uppercase tracking-wider text-sub/40 mt-1.5">acc</div>
+      </div>
+      <div class="text-center">
+        <div id="tTime" class="text-text text-2xl leading-none">0:00</div>
+        <div class="text-[10px] uppercase tracking-wider text-sub/40 mt-1.5">time</div>
+      </div>
+      <div class="text-center">
+        <div id="tLeft" class="text-text text-2xl leading-none">0</div>
+        <div class="text-[10px] uppercase tracking-wider text-sub/40 mt-1.5">left</div>
+      </div>
     </div>
 
     <!-- typing area -->
@@ -1470,6 +1433,7 @@
       view: 'typing',        // 'typing' | 'grammar'
       gprog: {},             // grammar progress: { pointId: { done, best } }
       gpoint: null,          // currently open grammar point id
+      gmodes: { mc: true, fill: true, full: false },   // drill types
       words: [],
       typed: [],
       cursor: 0,
@@ -1599,7 +1563,73 @@
       'ㄽ':['ㄹ','ㅅ'],'ㄾ':['ㄹ','ㅌ'],'ㄿ':['ㄹ','ㅍ'],'ㅀ':['ㄹ','ㅎ'],'ㅄ':['ㅂ','ㅅ'],
     };
 
-    const ime = { cho: -1, jung: -1, jong: 0, hist: [] };
+    /* A reusable 두벌식 (dubeolsik) composer. `add` returns any text that
+       finished composing and should be appended to the committed buffer. */
+    function createComposer() {
+      const st = { cho: -1, jung: -1, jong: 0, hist: [] };
+      const api = {
+        reset: function () { st.cho = -1; st.jung = -1; st.jong = 0; st.hist = []; },
+        render: function () {
+          if (st.cho === -1 && st.jung === -1) return '';
+          if (st.jung === -1) return CHO[st.cho];
+          if (st.cho === -1) return JUNG[st.jung];
+          return String.fromCharCode(0xAC00 + ((st.cho * 21) + st.jung) * 28 + st.jong);
+        },
+        add: function (j) {
+          let out = '';
+          const flush = function () { out += api.render(); api.reset(); };
+          if (CHO.indexOf(j) !== -1) {
+            // ---- consonant ----
+            if (st.jung === -1) {
+              if (st.cho === -1) st.cho = CHO.indexOf(j);
+              else { flush(); st.cho = CHO.indexOf(j); }
+            } else if (st.jong === 0) {
+              if (JONG.indexOf(j) > 0) {
+                if (st.cho === -1) st.cho = CHO.indexOf('ㅇ');  // silent initial
+                st.jong = JONG.indexOf(j);
+              } else { flush(); st.cho = CHO.indexOf(j); }
+            } else {
+              const combined = FINAL_COMBINE[JONG[st.jong] + j];
+              if (combined) st.jong = JONG.indexOf(combined);
+              else { flush(); st.cho = CHO.indexOf(j); }
+            }
+          } else {
+            // ---- vowel ----
+            if (st.jung === -1) {
+              st.jung = JUNG.indexOf(j);
+            } else if (st.jong !== 0) {
+              // a vowel after a final consonant moves that consonant into the
+              // next syllable — vowels never merge across a final consonant
+              const finChar = JONG[st.jong];
+              const split = FINAL_SPLIT[finChar];
+              let keepJong = 0, moveChar = finChar;
+              if (split) { keepJong = JONG.indexOf(split[0]); moveChar = split[1]; }
+              st.jong = keepJong;
+              out += api.render();
+              api.reset();
+              st.cho = CHO.indexOf(moveChar);
+              st.jung = JUNG.indexOf(j);
+              st.hist.push(moveChar);   // so backspace can replay this syllable
+            } else {
+              const combined = VOWEL_COMBINE[JUNG[st.jung] + j];
+              if (combined) st.jung = JUNG.indexOf(combined);
+              else { flush(); st.jung = JUNG.indexOf(j); }
+            }
+          }
+          st.hist.push(j);
+          return out;
+        },
+        // remove the last jamo of the syllable being built; false if none
+        backspace: function () {
+          if (st.hist.length === 0) return false;
+          const hist = st.hist.slice(0, -1);
+          api.reset();
+          for (let i = 0; i < hist.length; i++) api.add(hist[i]);
+          return true;
+        },
+      };
+      return api;
+    }
 
     function keyToJamo(key) {
       if (key.length !== 1) return null;
@@ -1608,77 +1638,20 @@
       return Object.prototype.hasOwnProperty.call(DUBEOL, lower) ? DUBEOL[lower] : null;
     }
 
-    function imeReset() { ime.cho = -1; ime.jung = -1; ime.jong = 0; ime.hist = []; }
-
-    function imeRender() {
-      if (ime.cho === -1 && ime.jung === -1) return '';
-      if (ime.jung === -1) return CHO[ime.cho];
-      if (ime.cho === -1) return JUNG[ime.jung];
-      return String.fromCharCode(0xAC00 + ((ime.cho * 21) + ime.jung) * 28 + ime.jong);
+    const testIme = createComposer();
+    function imeReset() { testIme.reset(); }
+    function imeRender() { return testIme.render(); }
+    function imeAdd(j) {
+      const out = testIme.add(j);
+      if (out) state.typed[state.cursor] = (state.typed[state.cursor] || '') + out;
     }
-
     function imeFlush() {
       const s = imeRender();
       if (s) state.typed[state.cursor] = (state.typed[state.cursor] || '') + s;
       imeReset();
     }
-
-    function imeAdd(j) {
-      if (CHO.indexOf(j) !== -1) {
-        // ---- consonant ----
-        if (ime.jung === -1) {
-          if (ime.cho === -1) ime.cho = CHO.indexOf(j);
-          else { imeFlush(); ime.cho = CHO.indexOf(j); }
-        } else if (ime.jong === 0) {
-          if (JONG.indexOf(j) > 0) {
-            if (ime.cho === -1) ime.cho = CHO.indexOf('ㅇ');  // silent initial
-            ime.jong = JONG.indexOf(j);
-          } else { imeFlush(); ime.cho = CHO.indexOf(j); }
-        } else {
-          const combined = FINAL_COMBINE[JONG[ime.jong] + j];
-          if (combined) ime.jong = JONG.indexOf(combined);
-          else { imeFlush(); ime.cho = CHO.indexOf(j); }
-        }
-      } else {
-        // ---- vowel ----
-        if (ime.jung === -1) {
-          ime.jung = JUNG.indexOf(j);
-        } else if (ime.jong !== 0) {
-          // a vowel after a final consonant always moves that consonant into the
-          // next syllable — vowels never merge across a final consonant
-          const finChar = JONG[ime.jong];
-          const split = FINAL_SPLIT[finChar];
-          let keepJong = 0, moveChar = finChar;
-          if (split) { keepJong = JONG.indexOf(split[0]); moveChar = split[1]; }
-          ime.jong = keepJong;
-          state.typed[state.cursor] = (state.typed[state.cursor] || '') + imeRender();
-          imeReset();
-          ime.cho = CHO.indexOf(moveChar);
-          ime.jung = JUNG.indexOf(j);
-          ime.hist.push(moveChar);   // so backspace can replay this syllable
-        } else {
-          const combined = VOWEL_COMBINE[JUNG[ime.jung] + j];
-          if (combined) {
-            ime.jung = JUNG.indexOf(combined);
-          } else {
-            imeFlush();
-            ime.jung = JUNG.indexOf(j);
-          }
-        }
-      }
-      ime.hist.push(j);
-    }
-
     function imeBackspace() {
-      if (ime.hist.length > 0) {
-        // remove the last jamo and replay the rest of the current syllable
-        const hist = ime.hist.slice(0, -1);
-        const before = state.typed[state.cursor] || '';
-        imeReset();
-        for (let i = 0; i < hist.length; i++) imeAdd(hist[i]);
-        state.typed[state.cursor] = before;   // replay must not commit text
-        return true;
-      }
+      if (testIme.backspace()) return true;
       const cur = state.typed[state.cursor] || '';
       if (cur.length > 0) { state.typed[state.cursor] = cur.slice(0, -1); return true; }
       if (state.cursor > 0) { state.cursor--; speakActive(); return true; }
@@ -2067,7 +2040,7 @@
         if (e.key === 'Escape') { e.preventDefault(); setPanel(false); }
         return;
       }
-      if (state.view !== 'typing') return;
+      if (state.view === 'grammar') { handleGrammarKeys(e); return; }
       // global restart shortcuts
       if (e.key === 'Tab' || e.key === 'Enter') {
         if (state.status === 'finished') { e.preventDefault(); newTest(false); return; }
@@ -2161,7 +2134,6 @@
       if (state.speakWords) speakActive(); else stopSpeech();
     }
 
-    $('voiceToggle').addEventListener('click', () => setVoice(!state.speakWords));
     $('replayBtn').addEventListener('click', () => {
       const pair = state.words[state.cursor];
       if (pair && pair[0]) speak(pair[0]);
@@ -2204,6 +2176,10 @@
     window.addEventListener('resize', () => {
       if (state.words.length) render();
       if (!$('results').classList.contains('hidden')) drawChart();
+    });
+    window.addEventListener('beforeunload', saveSettings);
+    document.addEventListener('visibilitychange', function () {
+      if (document.visibilityState === 'hidden') saveSettings();
     });
     window.addEventListener('blur', () => { clearTimeout(state.typingTimer); document.body.classList.remove('typing'); });
 
@@ -2463,7 +2439,7 @@
           theme: state.theme, length: state.length, tier: state.tier,
           showMeaning: state.showMeaning, inputMode: state.inputMode, showKeyboard: state.showKeyboard,
           speakWords: state.speakWords, voiceName: state.voiceName, voiceRate: state.voiceRate,
-          gprog: state.gprog, view: state.view,
+          gprog: state.gprog, view: state.view, gmodes: state.gmodes,
         }));
       } catch (e) { /* storage unavailable — ignore */ }
     }
@@ -2482,6 +2458,13 @@
         if (typeof s.voiceName === 'string') state.voiceName = s.voiceName;
         if (typeof s.voiceRate === 'number' && s.voiceRate >= 0.5 && s.voiceRate <= 2) state.voiceRate = s.voiceRate;
         if (s.gprog && typeof s.gprog === 'object') state.gprog = s.gprog;
+        if (s.gmodes && typeof s.gmodes === 'object') {
+          state.gmodes = {
+            mc: s.gmodes.mc !== false,
+            fill: s.gmodes.fill !== false,
+            full: s.gmodes.full === true
+          };
+        }
         if (s.view === 'grammar' || s.view === 'typing') state.view = s.view;
       } catch (e) { /* corrupted storage — ignore */ }
     }
@@ -2502,7 +2485,8 @@
 
       $('tierSelect').value = state.tier;
       $('meaningToggle').classList.toggle('active', state.showMeaning);
-      $('voiceToggle').classList.toggle('active', state.speakWords);
+      const vt = $('voiceToggle');
+      if (vt) vt.classList.toggle('active', state.speakWords);
 
       const vs = $('voiceSelect');
       if (vs) vs.value = state.voiceName || '';
@@ -2541,24 +2525,25 @@
     function gkPlain(ko) { return ko.replace(/\[\[|\]\]/g, ''); }
     function gkMarked(ko) { return esc(ko).replace(/\[\[(.+?)\]\]/g, '<span class="g-target">$1</span>'); }
     function gkBlank(ko) { return esc(ko).replace(/\[\[(.+?)\]\]/g, '<span class="g-blank">?</span>'); }
+    function gChip(mode, label) {
+      return '<button class="seg-btn' + (state.gmodes[mode] ? ' active' : '') + '" data-mode="' + mode + '">' + label + '</button>';
+    }
 
     function renderPath() {
       let h = '';
       GRAMMAR.forEach(function (les) {
         let doneCount = 0;
         les.p.forEach(function (pt, pi) { if (gDone('l' + les.l + '-' + (pi + 1))) doneCount++; });
-        h += '<div class="rounded-xl border border-line/50 bg-panel/30 p-3">' +
-               '<div class="flex items-baseline justify-between gap-2 mb-2 px-1">' +
-                 '<div class="text-text text-sm truncate">Lesson ' + les.l + ' <span class="text-sub/50">· ' + esc(les.t) + '</span></div>' +
-                 '<div class="text-[10px] text-sub/50 shrink-0">' + doneCount + '/' + les.p.length + '</div>' +
-               '</div><div class="space-y-1">';
+        h += '<div class="mb-4">' +
+               '<div class="flex items-baseline justify-between gap-2 mb-1 px-1">' +
+                 '<div class="text-sub/50 text-[11px] uppercase tracking-wider">Lesson ' + les.l + ' · ' + esc(les.t) + '</div>' +
+                 '<div class="text-[10px] text-sub/30 shrink-0">' + doneCount + '/' + les.p.length + '</div>' +
+               '</div><div>';
         les.p.forEach(function (pt, pi) {
           const id = 'l' + les.l + '-' + (pi + 1);
-          const idx = GPOINTS.findIndex(function (g) { return g.id === id; });
-          const unlocked = gUnlocked(idx);
-          const icon = gDone(id) ? '✓' : (unlocked ? '○' : '🔒');
-          h += '<div class="gp-item' + (state.gpoint === id ? ' active' : '') + (unlocked ? '' : ' locked') + '" data-gp="' + id + '">' +
-                 '<span class="w-4 text-center shrink-0">' + icon + '</span>' +
+          const done = gDone(id);
+          h += '<div class="gp-item' + (state.gpoint === id ? ' active' : '') + '" data-gp="' + id + '">' +
+                 '<span class="w-3 shrink-0 ' + (done ? 'text-main' : 'text-sub/25') + '">' + (done ? '✓' : '·') + '</span>' +
                  '<span class="truncate">' + esc(pt.t) + '</span></div>';
         });
         h += '</div></div>';
@@ -2593,11 +2578,21 @@
       });
       h += '</div></div>';
 
-      h += '<div class="flex flex-wrap items-center gap-4 mb-7">' +
-             '<button id="gPractice" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">' + (done ? 'practice again' : 'start practice') + '</button>' +
-             (done ? '<span class="text-xs text-main">✓ completed · best ' + gBest(id) + '%</span>'
-                   : '<span class="text-xs text-sub/50">answer at least 80% to unlock the next point</span>') +
-           '</div>';
+      const nEx = pt.e.length;
+      const nFull = pt.e.filter(function (ex) { return /^[가-힣\s?!.,~]+$/.test(gkPlain(ex[0])); }).length;
+      const nItems = (state.gmodes.mc ? nEx : 0) + (state.gmodes.fill ? nEx : 0) + (state.gmodes.full ? nFull : 0);
+      h += '<div class="mb-7 rounded-xl border border-line/40 bg-panel/20 px-4 py-3.5">' +
+             '<div class="flex flex-wrap items-center gap-2 mb-3">' +
+               gChip('mc', 'choose the form') +
+               gChip('fill', 'type the missing part') +
+               gChip('full', 'type the whole sentence') +
+             '</div>' +
+             '<div class="flex flex-wrap items-center gap-4">' +
+               '<button id="gPractice" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">' +
+                 (done ? 'drill again' : 'start drill') + '</button>' +
+               '<span class="text-xs text-sub/50">' + (nItems || nEx) + ' questions</span>' +
+               (done ? '<span class="text-xs text-main">best ' + gBest(id) + '%</span>' : '') +
+             '</div></div>';
 
       h += '<div class="text-[11px] uppercase tracking-wider text-sub/50 mb-3">examples (' + pt.e.length + ') · click to hear</div>';
       h += '<div class="space-y-2.5" id="gExamples">';
@@ -2610,108 +2605,202 @@
 
       $('grammarContent').innerHTML = h;
       $('gPractice').addEventListener('click', function () { startPractice(id); });
+      $('grammarContent').querySelectorAll('[data-mode]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          state.gmodes[b.dataset.mode] = !state.gmodes[b.dataset.mode];
+          if (!state.gmodes.mc && !state.gmodes.fill && !state.gmodes.full) state.gmodes.mc = true;
+          saveSettings();
+          renderPoint(id);
+        });
+      });
       $('gExamples').querySelectorAll('.g-ex').forEach(function (el) {
         el.addEventListener('click', function () { speak(gkPlain(pt.e[Number(el.dataset.ex)][0])); });
       });
       renderPath();
     }
 
+    function buildOptions(answer, d) {
+      const wrong = shuffle(d.filter(function (x) { return x !== answer; })).slice(0, 3);
+      return shuffle([answer].concat(wrong));
+    }
+
+    function buildItems(g, modes) {
+      const items = [];
+      const exs = g.pt.e;
+      const marked = exs.filter(function (ex) { return gkTarget(ex[0]); });
+      if (modes.mc) shuffle(marked.slice()).forEach(function (ex) {
+        items.push({ kind: 'mc', ko: ex[0], en: ex[1], answer: gkTarget(ex[0]), options: buildOptions(gkTarget(ex[0]), g.pt.d) });
+      });
+      if (modes.fill) shuffle(marked.slice()).forEach(function (ex) {
+        items.push({ kind: 'fill', ko: ex[0], en: ex[1], answer: gkTarget(ex[0]) });
+      });
+      if (modes.full) shuffle(exs.filter(function (ex) { return /^[가-힣\s?!.,~]+$/.test(gkPlain(ex[0])); })).forEach(function (ex) {
+        items.push({ kind: 'full', ko: ex[0], en: ex[1], answer: gkPlain(ex[0]) });
+      });
+      return items;
+    }
+
     function startPractice(id) {
       const g = GPOINTS.filter(function (x) { return x.id === id; })[0];
       if (!g) return;
       state.gpoint = id;
-      const qs = shuffle(g.pt.e.slice()).map(function (ex) {
-        const answer = gkTarget(ex[0]);
-        const wrong = shuffle(g.pt.d.filter(function (x) { return x !== answer; })).slice(0, 3);
-        return { ko: ex[0], en: ex[1], answer: answer, options: shuffle([answer].concat(wrong)) };
-      });
-      quizState = { id: id, qs: qs, i: 0, score: 0, answered: false, results: [] };
+      let items = buildItems(g, state.gmodes);
+      if (!items.length) { state.gmodes.mc = true; items = buildItems(g, state.gmodes); }
+      quizState = {
+        id: id, items: items, i: 0, score: 0, answered: false, results: [],
+        typed: '', composer: createComposer(),
+      };
       renderPath();
-      renderQuiz();
+      renderQuestion();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function renderQuiz() {
+    function typeArea() {
+      return '<div class="relative mb-1">' +
+               '<input id="gTypeIn" class="absolute inset-0 w-full h-full opacity-0 cursor-text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" aria-label="your answer">' +
+               '<div id="gTypeDisp" class="min-h-[2.6rem] text-2xl leading-relaxed border-b border-line/60 pb-1"></div>' +
+             '</div>' +
+             '<div class="text-[11px] text-sub/40 mt-2">press <span class="text-sub/70">enter</span> to check</div>';
+    }
+
+    function drawTyped() {
+      const disp = $('gTypeDisp');
+      if (!disp || !quizState) return;
+      const typed = quizState.typed + quizState.composer.render();
+      let h = '';
+      for (let i = 0; i < typed.length; i++) h += '<span class="ch-correct">' + esc(typed[i]) + '</span>';
+      h += '<span class="caret"></span>';
+      disp.innerHTML = h;
+    }
+
+    function renderQuestion() {
       if (!quizState) return;
-      const total = quizState.qs.length;
-      if (quizState.i >= total) { renderQuizResult(); return; }
-      const q = quizState.qs[quizState.i];
+      const total = quizState.items.length;
+      if (quizState.i >= total) { renderResult(); return; }
+      const it = quizState.items[quizState.i];
       const exitId = quizState.id;
 
       let h = '<div class="flex items-center justify-between mb-4">' +
-                '<button id="gExit" class="text-xs text-sub hover:text-text">← exit</button>' +
+                '<button id="gExit" class="text-xs text-sub hover:text-text">← back</button>' +
                 '<div class="text-xs text-sub/50">' + (quizState.i + 1) + ' / ' + total + '</div></div>';
       h += '<div class="h-1.5 w-full bg-line/40 rounded-full overflow-hidden mb-7"><div class="h-full bg-main transition-all duration-300" style="width:' + Math.round(quizState.i / total * 100) + '%"></div></div>';
-      h += '<div class="text-[11px] uppercase tracking-wider text-sub/50 mb-2">choose the right form</div>';
-      h += '<div class="text-sub mb-1">' + esc(q.en) + '</div>';
-      h += '<div class="text-2xl mb-7 leading-relaxed">' + gkBlank(q.ko) + '</div>';
-      h += '<div class="flex flex-wrap gap-2" id="gOptions">';
-      q.options.forEach(function (o, i) { h += '<button class="g-opt" data-opt="' + i + '">' + esc(o) + '</button>'; });
-      h += '</div><div id="gFb" class="mt-6 text-sm min-h-[3rem]"></div>';
+
+      if (it.kind === 'mc') {
+        h += '<div class="text-[11px] uppercase tracking-wider text-sub/50 mb-2">choose the right form</div>' +
+             '<div class="text-sub mb-1">' + esc(it.en) + '</div>' +
+             '<div class="text-2xl mb-7 leading-relaxed">' + gkBlank(it.ko) + '</div>' +
+             '<div class="flex flex-wrap gap-2" id="gOptions">';
+        it.options.forEach(function (o, i) { h += '<button class="g-opt" data-opt="' + i + '">' + esc(o) + '</button>'; });
+        h += '</div>';
+      } else if (it.kind === 'fill') {
+        h += '<div class="text-[11px] uppercase tracking-wider text-sub/50 mb-2">type the missing part</div>' +
+             '<div class="text-sub mb-1">' + esc(it.en) + '</div>' +
+             '<div class="text-2xl mb-7 leading-relaxed">' + gkBlank(it.ko) + '</div>' + typeArea();
+      } else {
+        h += '<div class="text-[11px] uppercase tracking-wider text-sub/50 mb-2">type this sentence</div>' +
+             '<div class="text-sub mb-3">' + esc(it.en) + '</div>' +
+             '<div class="text-2xl mb-5 leading-relaxed text-text/80">' + esc(gkPlain(it.ko)) + '</div>' + typeArea();
+      }
+      h += '<div id="gFb" class="mt-6 text-sm min-h-[3rem]"></div>';
 
       $('grammarContent').innerHTML = h;
       $('gExit').addEventListener('click', function () { quizState = null; renderPoint(exitId); });
-      $('gOptions').querySelectorAll('.g-opt').forEach(function (btn) {
-        btn.addEventListener('click', function () { answerQuiz(Number(btn.dataset.opt)); });
-      });
+
+      if (it.kind === 'mc') {
+        $('gOptions').querySelectorAll('.g-opt').forEach(function (btn) {
+          btn.addEventListener('click', function () { answerMC(Number(btn.dataset.opt)); });
+        });
+      } else {
+        quizState.typed = '';
+        quizState.composer.reset();
+        const inp = $('gTypeIn');
+        if (inp) {
+          inp.addEventListener('input', function () {
+            quizState.typed = (inp.value || '').normalize('NFC');
+            drawTyped();
+          });
+          inp.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); submitTyped(); }
+          });
+          if (state.inputMode !== 'korean') inp.focus({ preventScroll: true });
+        }
+        drawTyped();
+      }
     }
 
-    function answerQuiz(optIndex) {
+    function answerMC(optIndex) {
       if (!quizState || quizState.answered) return;
-      const q = quizState.qs[quizState.i];
-      quizState.answered = true;
-      const chosen = q.options[optIndex];
-      const correct = chosen === q.answer;
-      if (correct) quizState.score++;
-      quizState.results.push({ ko: gkPlain(q.ko), en: q.en, answer: q.answer, chosen: chosen, correct: correct });
-
+      const it = quizState.items[quizState.i];
+      const chosen = it.options[optIndex];
       $('gOptions').querySelectorAll('.g-opt').forEach(function (b, i) {
         b.disabled = true;
-        if (q.options[i] === q.answer) b.classList.add('correct');
+        if (it.options[i] === it.answer) b.classList.add('correct');
         else if (i === optIndex) b.classList.add('wrong');
       });
+      finishItem(chosen === it.answer, chosen, it);
+    }
 
-      const last = quizState.i + 1 >= quizState.qs.length;
+    function submitTyped() {
+      if (!quizState || quizState.answered) return;
+      const it = quizState.items[quizState.i];
+      if (it.kind !== 'fill' && it.kind !== 'full') return;
+      const typed = (quizState.typed + quizState.composer.render()).normalize('NFC');
+      quizState.composer.reset();
+      const norm = function (s) { return s.normalize('NFC').replace(/[?!.,~]/g, '').replace(/\s+/g, ' ').trim(); };
+      finishItem(norm(typed) === norm(it.answer), typed, it);
+    }
+
+    function finishItem(correct, given, it) {
+      quizState.answered = true;
+      if (correct) quizState.score++;
+      quizState.results.push({ kind: it.kind, ko: gkPlain(it.ko), en: it.en, answer: it.answer, given: given, correct: correct });
+
+      const last = quizState.i + 1 >= quizState.items.length;
       $('gFb').innerHTML =
         '<div class="flex items-start justify-between gap-4">' +
           '<div>' +
             (correct ? '<span class="text-main">✓ correct</span>'
-                     : '<span class="text-error">✗</span> <span class="text-sub/70">answer:</span> <span class="text-main">' + esc(q.answer) + '</span>') +
-            '<div class="text-sub/60 text-xs mt-1">' + esc(gkPlain(q.ko)) + '</div>' +
+                     : '<span class="text-error">✗</span> <span class="text-sub/60">answer:</span> <span class="text-main">' + esc(it.answer) + '</span>') +
+            '<div class="text-sub/60 text-xs mt-1">' + esc(gkPlain(it.ko)) + '</div>' +
           '</div>' +
           '<button id="gNext" class="shrink-0 px-5 py-2 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">' + (last ? 'finish' : 'next') + '</button>' +
         '</div>';
+
+      if (it.kind !== 'mc') {
+        const inp = $('gTypeIn');
+        if (inp) inp.disabled = true;
+        const disp = $('gTypeDisp');
+        if (disp) disp.innerHTML = '<span class="' + (correct ? 'ch-correct' : 'ch-wrong') + '">' + esc(given || '—') + '</span>';
+      }
+
       $('gNext').addEventListener('click', function () {
         quizState.answered = false;
         quizState.i++;
-        renderQuiz();
+        renderQuestion();
       });
     }
 
-    function renderQuizResult() {
-      const total = quizState.qs.length;
+    function renderResult() {
+      const total = quizState.items.length;
       const pct = Math.round(quizState.score / total * 100);
-      const passed = pct >= 80;
       const id = quizState.id;
-
-      if (passed) {
-        if (!state.gprog[id]) state.gprog[id] = {};
-        state.gprog[id].done = true;
-        state.gprog[id].best = Math.max(gBest(id), pct);
-        saveSettings();
-      }
+      if (!state.gprog[id]) state.gprog[id] = {};
+      state.gprog[id].done = true;
+      state.gprog[id].best = Math.max(gBest(id), pct);
+      saveSettings();
 
       let h = '<div class="text-center py-6">' +
-                '<div class="text-[11px] uppercase tracking-[0.3em] text-sub/50 mb-3">practice complete</div>' +
-                '<div class="text-6xl ' + (passed ? 'text-main' : 'text-error') + ' mb-2">' + pct + '%</div>' +
-                '<div class="text-sub mb-6">' + quizState.score + ' / ' + total + ' correct' +
-                  (passed ? ' · unlocked next point' : ' · need 80% to unlock the next point') + '</div>' +
+                '<div class="text-[11px] uppercase tracking-[0.3em] text-sub/50 mb-3">drill complete</div>' +
+                '<div class="text-6xl text-main mb-2">' + pct + '%</div>' +
+                '<div class="text-sub mb-6">' + quizState.score + ' / ' + total + ' correct</div>' +
                 '<div class="flex flex-wrap items-center justify-center gap-3">' +
-                  '<button id="gRetry" class="px-5 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">try again</button>' +
-                  (passed ? '<button id="gNextPoint" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">next point →</button>' : '') +
+                  '<button id="gRetry" class="px-5 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">drill again</button>' +
+                  '<button id="gBackPoint" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">back to the lesson</button>' +
                 '</div></div>';
 
-      h += '<div class="mt-8 text-[11px] uppercase tracking-wider text-sub/50 mb-3">review</div><div class="space-y-1.5">';
+      const wrong = quizState.results.filter(function (r) { return !r.correct; });
+      h += '<div class="mt-8 text-[11px] uppercase tracking-wider text-sub/50 mb-3">' +
+             (wrong.length ? 'missed (' + wrong.length + ')' : 'review') + '</div><div class="space-y-1.5">';
       quizState.results.forEach(function (r) {
         h += '<div class="flex items-start gap-3 text-sm px-3 py-2 rounded-lg ' + (r.correct ? '' : 'bg-error/10') + '">' +
                '<span class="' + (r.correct ? 'text-main' : 'text-error') + '">' + (r.correct ? '✓' : '✗') + '</span>' +
@@ -2721,13 +2810,56 @@
 
       $('grammarContent').innerHTML = h;
       $('gRetry').addEventListener('click', function () { startPractice(id); });
-      const nxt = $('gNextPoint');
-      if (nxt) nxt.addEventListener('click', function () {
-        const idx = GPOINTS.findIndex(function (g) { return g.id === id; });
-        renderPoint(GPOINTS[Math.min(idx + 1, GPOINTS.length - 1)].id);
-      });
+      $('gBackPoint').addEventListener('click', function () { renderPoint(id); });
       renderPath();
       window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function handleGrammarKeys(e) {
+      if (e.key === 'Escape' && quizState) {
+        e.preventDefault();
+        const id = quizState.id;
+        quizState = null;
+        renderPoint(id);
+        return;
+      }
+      if (!quizState || quizState.answered) return;
+      const it = quizState.items[quizState.i];
+      if (!it || (it.kind !== 'fill' && it.kind !== 'full')) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+
+      if (state.inputMode === 'korean') {
+        if (e.isComposing) return;
+        if (e.key === 'Enter') { e.preventDefault(); submitTyped(); return; }
+        if (e.key === 'Backspace') {
+          e.preventDefault();
+          if (!quizState.composer.backspace()) quizState.typed = quizState.typed.slice(0, -1);
+          drawTyped();
+          return;
+        }
+        if (e.key === ' ' || '?!.,~'.indexOf(e.key) !== -1) {
+          e.preventDefault();
+          quizState.typed += quizState.composer.render();
+          quizState.composer.reset();
+          quizState.typed += e.key;
+          drawTyped();
+          return;
+        }
+        if (e.key.length === 1) {
+          const jamo = keyToJamo(e.key);
+          if (jamo) {
+            e.preventDefault();
+            const out = quizState.composer.add(jamo);
+            if (out) quizState.typed += out;
+            drawTyped();
+          } else if (e.key.charCodeAt(0) < 128) {
+            e.preventDefault();
+          }
+          return;
+        }
+        return;
+      }
+      if (e.key === 'Enter') { e.preventDefault(); submitTyped(); }
     }
 
     function setView(v) {
