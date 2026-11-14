@@ -1188,7 +1188,10 @@
 
     function onInput() {
       if (state.status === 'finished') { capture.value = ''; return; }
-      const v = capture.value;
+      let v = capture.value;
+      // Some OS Korean IMEs deliver decomposed jamo (NFD: 물…) which looks
+      // identical to 물 but never matches. Normalise everything to NFC.
+      if (v.normalize) v = v.normalize('NFC');
       const sp = v.search(/[\s\u3000]/);
 
       if (sp !== -1) {
@@ -1226,6 +1229,7 @@
     }
 
     function commit(value) {
+      if (value && value.normalize) value = value.normalize('NFC');
       state.typed[state.cursor] = value;
       ensureStarted();
       markTyping();
