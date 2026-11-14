@@ -291,6 +291,18 @@
 
       <div class="hidden sm:block w-px h-5 bg-line"></div>
 
+      <!-- voice toggle -->
+      <button id="voiceToggle" class="pill-btn flex items-center gap-1.5" title="Hear each word before typing">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5 6 9H2v6h4l5 4V5z"></path>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+          <path d="M19 5a9 9 0 0 1 0 14"></path>
+        </svg>
+        <span>voice</span>
+      </button>
+
+      <div class="hidden sm:block w-px h-5 bg-line"></div>
+
       <!-- restart -->
       <button id="restartBtn" class="pill-btn flex items-center gap-1.5" title="Restart (Esc)">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -316,6 +328,14 @@
       <span><span class="text-sub">backspace</span> previous</span>
       <span><span class="text-sub">esc / tab</span> restart</span>
       <span id="inputHint" class="text-main/80"></span>
+      <button id="replayBtn" class="flex items-center gap-1.5 text-sub/60 hover:text-main transition">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M11 5 6 9H2v6h4l5 4V5z"></path>
+          <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+          <path d="M19 5a9 9 0 0 1 0 14"></path>
+        </svg>
+        replay word
+      </button>
     </div>
 
     <!-- on-screen keyboard -->
@@ -439,6 +459,21 @@
       <section>
         <div class="text-sub/60 text-xs uppercase tracking-wider mb-3">on-screen keyboard</div>
         <div id="settingsKbd" class="flex gap-2"></div>
+      </section>
+
+      <!-- voice -->
+      <section>
+        <div class="text-sub/60 text-xs uppercase tracking-wider mb-3">voice</div>
+        <div id="settingsVoice" class="flex gap-2"></div>
+        <label class="text-sub/60 text-xs uppercase tracking-wider block mt-4 mb-1.5">voice</label>
+        <select id="voiceSelect"
+          class="w-full bg-bg border border-line text-sub rounded-lg text-xs px-2 py-1.5 outline-none
+                 hover:text-text focus:text-text focus:border-main/50 cursor-pointer"></select>
+        <label class="text-sub/60 text-xs uppercase tracking-wider block mt-4 mb-1.5">
+          speed <span id="voiceRateVal" class="text-sub/50">0.90</span>
+        </label>
+        <input id="voiceRate" type="range" min="0.6" max="1.4" step="0.05" value="0.9" class="w-full">
+        <p id="voiceNote" class="text-sub/50 text-[11px] leading-relaxed mt-3"></p>
       </section>
     </div>
   </aside>
@@ -789,6 +824,9 @@
       theme: 'default_dark',
       inputMode: 'korean',   // 'korean' = built-in IME | 'system' = OS IME
       showKeyboard: true,
+      speakWords: false,     // read each word aloud before typing
+      voiceName: '',
+      voiceRate: 0.9,
       composing: false,
       words: [],
       typed: [],
@@ -864,6 +902,7 @@
       render();
       updateTicker();
       if (!panelOpen) capture.focus({ preventScroll: true });
+      speakActive();
     }
 
     function ensureStarted() {
@@ -1000,7 +1039,7 @@
       }
       const cur = state.typed[state.cursor] || '';
       if (cur.length > 0) { state.typed[state.cursor] = cur.slice(0, -1); return true; }
-      if (state.cursor > 0) { state.cursor--; return true; }
+      if (state.cursor > 0) { state.cursor--; speakActive(); return true; }
       return false;
     }
 
@@ -1199,6 +1238,7 @@
       if (state.typed[state.cursor] == null) state.typed[state.cursor] = '';
       render();
       updateTicker();
+      speakActive();
     }
 
     /* ---------------- finish + results ---------------- */
@@ -1211,6 +1251,7 @@
       imeReset();
       capture.value = '';
       document.body.classList.remove('typing');
+      stopSpeech();
 
       // capture the final partial second for the graph
       const tNow = state.elapsed / 1000;
@@ -1369,6 +1410,7 @@
         capture.value = state.typed[state.cursor] || '';
         state.typed[state.cursor] = capture.value;
         render();
+        speakActive();
         e.preventDefault();
       }
     });
@@ -1461,6 +1503,32 @@
         state.showKeyboard = kbdBtn.dataset.kbd === 'on';
         syncSettings(); saveSettings(); buildKeyboard(); return;
       }
+
+      const voiceBtn = e.target.closest('[data-voice]');
+      if (voiceBtn) { setVoice(voiceBtn.dataset.voice === 'on'); return; }
+    });
+
+    function setVoice(on) {
+      state.speakWords = !!on;
+      syncSettings(); saveSettings();
+      if (state.speakWords) speakActive(); else stopSpeech();
+    }
+
+    $('voiceToggle').addEventListener('click', () => setVoice(!state.speakWords));
+    $('replayBtn').addEventListener('click', () => {
+      const pair = state.words[state.cursor];
+      if (pair && pair[0]) speak(pair[0]);
+    });
+    $('voiceSelect').addEventListener('change', (e) => {
+      state.voiceName = e.target.value;
+      saveSettings();
+      speakActive();
+    });
+    $('voiceRate').addEventListener('input', (e) => {
+      state.voiceRate = parseFloat(e.target.value);
+      const rv = $('voiceRateVal');
+      if (rv) rv.textContent = Number(state.voiceRate).toFixed(2);
+      saveSettings();
     });
 
     // drop-down in the bar
@@ -1605,6 +1673,10 @@
       $('settingsKbd').innerHTML =
         '<button class="seg-btn" data-kbd="on">on</button>' +
         '<button class="seg-btn" data-kbd="off">off</button>';
+
+      $('settingsVoice').innerHTML =
+        '<button class="seg-btn" data-voice="on">on</button>' +
+        '<button class="seg-btn" data-voice="off">off</button>';
     }
 
     function setInputMode(mode) {
@@ -1659,12 +1731,91 @@
       if (!panelOpen) capture.focus({ preventScroll: true });
     }
 
+    /* ---------------- text-to-speech (hear the word before typing) ---------------- */
+    const synth = window.speechSynthesis || null;
+
+    function koreanVoices() {
+      if (!synth) return [];
+      return synth.getVoices().filter((v) => /^ko/i.test(v.lang || ''));
+    }
+
+    function bestVoice() {
+      const ko = koreanVoices();
+      if (!ko.length) return null;
+      const score = (v) => {
+        const n = (v.name || '').toLowerCase();
+        let s = 0;
+        if (n.indexOf('natural') !== -1) s += 100;   // Edge's neural voices
+        if (n.indexOf('neural') !== -1) s += 80;
+        if (n.indexOf('online') !== -1) s += 40;
+        if (n.indexOf('google') !== -1) s += 30;
+        if ((v.lang || '').toLowerCase() === 'ko-kr') s += 10;
+        if (v.localService) s += 5;
+        return s;
+      };
+      return ko.slice().sort((a, b) => score(b) - score(a))[0];
+    }
+
+    function chosenVoice() {
+      if (!synth) return null;
+      const all = synth.getVoices();
+      if (state.voiceName) {
+        const v = all.filter((x) => x.name === state.voiceName)[0];
+        if (v) return v;
+      }
+      return bestVoice();
+    }
+
+    function speak(text) {
+      if (!synth || !text) return;
+      try {
+        synth.cancel();
+        const u = new SpeechSynthesisUtterance(String(text));
+        const v = chosenVoice();
+        if (v) u.voice = v;
+        u.lang = (v && v.lang) || 'ko-KR';
+        u.rate = state.voiceRate || 0.9;
+        u.pitch = 1;
+        synth.speak(u);
+      } catch (e) { /* speech unavailable — ignore */ }
+    }
+    function speakActive() {
+      if (!state.speakWords) return;
+      const pair = state.words[state.cursor];
+      if (pair && pair[0]) speak(pair[0]);
+    }
+    function stopSpeech() { if (synth) { try { synth.cancel(); } catch (e) { /* ignore */ } } }
+
+    function buildVoiceOptions() {
+      const sel = $('voiceSelect');
+      if (!sel) return;
+      const ko = koreanVoices();
+      sel.innerHTML =
+        '<option value="">auto (best available)</option>' +
+        ko.map((v) => '<option value="' + esc(v.name) + '">' + esc(v.name) + ' · ' + esc(v.lang) + '</option>').join('');
+      sel.value = state.voiceName || '';
+
+      const note = $('voiceNote');
+      if (note) {
+        note.textContent = !synth
+          ? 'Speech is not supported in this browser.'
+          : ko.length
+            ? ko.length + ' Korean voice' + (ko.length > 1 ? 's' : '') + ' found. "Natural"/"Online" voices sound best.'
+            : 'No Korean voice found. Edge or Chrome on Windows usually include Korean voices.';
+      }
+      const rate = $('voiceRate');
+      const rateVal = $('voiceRateVal');
+      if (rate) rate.value = String(state.voiceRate);
+      if (rateVal) rateVal.textContent = Number(state.voiceRate).toFixed(2);
+    }
+
     /* ---------------- persistence ---------------- */
     function saveSettings() {
       try {
         localStorage.setItem('koreantype.settings', JSON.stringify({
           theme: state.theme, length: state.length, tier: state.tier,
           showMeaning: state.showMeaning, inputMode: state.inputMode, showKeyboard: state.showKeyboard,
+          speakWords: state.speakWords, voiceName: state.voiceName, voiceRate: state.voiceRate,
         }));
       } catch (e) { /* storage unavailable — ignore */ }
     }
@@ -1679,6 +1830,9 @@
         if (typeof s.showMeaning === 'boolean') state.showMeaning = s.showMeaning;
         if (s.inputMode === 'korean' || s.inputMode === 'system') state.inputMode = s.inputMode;
         if (typeof s.showKeyboard === 'boolean') state.showKeyboard = s.showKeyboard;
+        if (typeof s.speakWords === 'boolean') state.speakWords = s.speakWords;
+        if (typeof s.voiceName === 'string') state.voiceName = s.voiceName;
+        if (typeof s.voiceRate === 'number' && s.voiceRate >= 0.5 && s.voiceRate <= 2) state.voiceRate = s.voiceRate;
       } catch (e) { /* corrupted storage — ignore */ }
     }
 
@@ -1693,9 +1847,19 @@
         b.classList.toggle('active', b.dataset.input === state.inputMode));
       document.querySelectorAll('[data-kbd]').forEach((b) =>
         b.classList.toggle('active', (b.dataset.kbd === 'on') === state.showKeyboard));
+      document.querySelectorAll('[data-voice]').forEach((b) =>
+        b.classList.toggle('active', (b.dataset.voice === 'on') === state.speakWords));
 
       $('tierSelect').value = state.tier;
       $('meaningToggle').classList.toggle('active', state.showMeaning);
+      $('voiceToggle').classList.toggle('active', state.speakWords);
+
+      const vs = $('voiceSelect');
+      if (vs) vs.value = state.voiceName || '';
+      const vr = $('voiceRate');
+      if (vr) vr.value = String(state.voiceRate);
+      const rv = $('voiceRateVal');
+      if (rv) rv.textContent = Number(state.voiceRate).toFixed(2);
 
       const hint = $('inputHint');
       if (hint) {
@@ -1710,6 +1874,8 @@
     buildThemeGrid();
     buildSettingsControls();
     buildKeyboard();
+    buildVoiceOptions();
+    if (synth) synth.onvoiceschanged = buildVoiceOptions;
     applyTheme(state.theme);
     syncSettings();
     newTest(false);
