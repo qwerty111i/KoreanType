@@ -777,6 +777,18 @@
             'Sino builds by tens: 이십 20, 삼십 30; 27 = 이십칠, 85 = 팔십오'
           ],
           d: ['일','이','삼','사','오','육','칠','팔','구','십','백','천','만','하나','둘','셋','다섯','여섯','열','스물'],
+          deck: [
+            ['1 (Sino-Korean)','일'],['2 (Sino-Korean)','이'],['3 (Sino-Korean)','삼'],['4 (Sino-Korean)','사'],
+            ['5 (Sino-Korean)','오'],['6 (Sino-Korean)','육'],['7 (Sino-Korean)','칠'],['8 (Sino-Korean)','팔'],
+            ['9 (Sino-Korean)','구'],['10 (Sino-Korean)','십'],['20 (Sino-Korean)','이십'],['30 (Sino-Korean)','삼십'],
+            ['40 (Sino-Korean)','사십'],['50 (Sino-Korean)','오십'],['60 (Sino-Korean)','육십'],['70 (Sino-Korean)','칠십'],
+            ['80 (Sino-Korean)','팔십'],['90 (Sino-Korean)','구십'],['100','백'],['1,000','천'],['10,000','만'],
+            ['27','이십칠'],['85','팔십오'],
+            ['1 (native)','하나'],['2 (native)','둘'],['3 (native)','셋'],['4 (native)','넷'],['5 (native)','다섯'],
+            ['6 (native)','여섯'],['7 (native)','일곱'],['8 (native)','여덟'],['9 (native)','아홉'],['10 (native)','열'],
+            ['20 (native)','스물'],['30 (native)','서른'],['40 (native)','마흔'],['50 (native)','쉰'],['60 (native)','예순'],
+            ['70 (native)','일흔'],['80 (native)','여든'],['90 (native)','아흔'],['35','서른다섯'],['63','예순셋'],['99','아흔아홉']
+          ],
           e: [
             ['Sino 3 = [[삼]]', 'three — Sino-Korean'],
             ['Sino 5 = [[오]]', 'five — Sino-Korean'],
@@ -1184,6 +1196,15 @@
             'Careful: 분 (minute) takes Sino numbers, but 분 (polite person) takes native numbers.'
           ],
           d: ['한','두','세','네','다섯','여섯','일곱','여덟','아홉','열','스물'],
+          deck: [
+            ['people (casual)','명'],['people (polite)','분'],['age (years old)','살'],
+            ['o’clock (hour of day)','시'],['hours (duration)','시간'],
+            ['animals','마리'],['items (general)','개'],['bottles','병'],['books','권'],
+            ['cups / glasses','잔'],['pieces / slices','조각'],['bowls','그릇'],
+            ['floors','층'],['school year / grade','학년'],['month (of a date)','월'],
+            ['day (of a date)','일'],['minutes','분'],['seconds','초'],
+            ['lesson numbers','과'],['money (won)','원']
+          ],
           hints: {
             '개': 'items (general)', '명': 'people (casual)', '분': 'people (polite) — or minutes, with Sino numbers',
             '마리': 'animals', '병': 'bottles', '권': 'books', '잔': 'cups or glasses', '조각': 'pieces',
@@ -1512,6 +1533,7 @@
       composing: false,
       view: 'typing',        // 'typing' | 'grammar'
       gprog: {},             // grammar progress: { pointId: { done, best } }
+      srs: {},               // spaced-repetition cards: { 'pointId|front': {ease,interval,reps,due} }
       gpoint: null,          // currently open grammar point id
       gmodes: { mc: true, fill: true, full: false },   // drill types
       gtab: 'study',      // 'study' | 'test'
@@ -2553,6 +2575,7 @@
           gprog: state.gprog, view: state.view, gmodes: state.gmodes,
           gtab: state.gtab, vlesson: state.vlesson,
           llesson: state.llesson, lsource: state.lsource,
+          srs: state.srs,
         }));
       } catch (e) { /* storage unavailable — ignore */ }
     }
@@ -2589,6 +2612,7 @@
         if (typeof s.vlesson === 'number' && s.vlesson >= 0 && s.vlesson < GRAMMAR.length) state.vlesson = s.vlesson;
         if (typeof s.llesson === 'number' && s.llesson >= -1 && s.llesson < GRAMMAR.length) state.llesson = s.llesson;
         if (s.lsource === 'words' || s.lsource === 'sentences' || s.lsource === 'mixed') state.lsource = s.lsource;
+        if (s.srs && typeof s.srs === 'object') state.srs = s.srs;
       } catch (e) { /* corrupted storage — ignore */ }
     }
 
@@ -2778,7 +2802,7 @@
            '</div>';
 
       h += state.gtab === 'test' ? gTestPanel(id, pt, done)
-         : state.gtab === 'practice' ? gPracticePanel(id, pt)
+         : state.gtab === 'practice' ? gPracticePanel(id, pt, les)
          : gStudyPanel(id, pt);
       h += '</div>';
 
@@ -2811,7 +2835,9 @@
           });
         });
       } else if (state.gtab === 'practice') {
-        $('gPracticeQueue').addEventListener('click', function () { startPracticeQueue(id); });
+        $('gPracticeQueue').addEventListener('click', function () { startPracticeQueue(id, false); });
+        const allBtn = $('gPracticeAll');
+        if (allBtn) allBtn.addEventListener('click', function () { startPracticeQueue(id, true); });
       } else {
         const idx = function () { return Math.max(0, Math.min(state.gcard, pt.e.length - 1)); };
         $('flashcard').addEventListener('click', function () {
@@ -3148,89 +3174,146 @@
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function gPracticePanel(id, pt) {
-      const n = pt.e.filter(function (ex) { return gkTarget(ex[0]); }).length;
+    function srsKey(id, card) { return id + '|' + card.front; }
+    function srsCard(v) { return v || { ease: 2.5, interval: 0, reps: 0, due: 0 }; }
+    function srsDue(id, card) { return srsCard(state.srs[srsKey(id, card)]).due <= Date.now(); }
+
+    // simplified SM-2: correct grows the interval, incorrect resets it
+    function srsGrade(id, card, correct) {
+      const k = srsKey(id, card);
+      const c = srsCard(state.srs[k]);
+      if (correct) {
+        c.reps++;
+        c.interval = c.reps === 1 ? 1 : (c.reps === 2 ? 6 : Math.max(1, Math.round(c.interval * c.ease)));
+        c.ease = Math.min(2.8, c.ease + 0.05);
+      } else {
+        c.reps = 0;
+        c.interval = 0;
+        c.ease = Math.max(1.3, c.ease - 0.2);
+      }
+      c.due = Date.now() + c.interval * 86400000;
+      state.srs[k] = c;
+    }
+
+    // every card for a section: the section's own items + the lesson vocabulary
+    function cardsFor(pt, les) {
+      const cards = [];
+      if (pt.deck) {
+        pt.deck.forEach(function (d) { cards.push({ front: d[0], back: d[1], note: d[2] || '' }); });
+      } else {
+        pt.e.forEach(function (ex) {
+          const target = gkTarget(ex[0]);
+          if (!target) return;
+          cards.push({ en: ex[1], cloze: ex[0], back: target, note: gWhyLine(pt, ex) || pt.x });
+        });
+      }
+      (les && les.v ? les.v : []).forEach(function (p) {
+        cards.push({ front: p[1], back: p[0], note: 'Lesson vocabulary' });
+      });
+      return cards;
+    }
+
+    function gPracticePanel(id, pt, les) {
+      const cards = cardsFor(pt, les);
+      const due = cards.filter(function (c) { return srsDue(id, c); }).length;
       return '<div class="max-w-2xl">' +
-        '<div class="text-sub text-sm mb-2">Clear every card until none are left. A wrong answer goes back into the queue, so you keep going until you get them all right.</div>' +
-        '<div class="text-[11px] uppercase tracking-wider text-sub/40 mb-4">' + n + ' cards</div>' +
-        '<button id="gPracticeQueue" class="px-7 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">start practice</button>' +
-        '</div>';
+        '<div class="text-sub text-sm leading-relaxed mb-4">Flashcards with spaced repetition. Read the card, reveal the answer, then mark it <span class="text-main">correct</span> or <span class="text-error">incorrect</span>. Incorrect cards go back into the deck until you get them.</div>' +
+        '<div class="text-[11px] uppercase tracking-wider text-sub/40 mb-4">' + due + ' of ' + cards.length + ' cards due</div>' +
+        '<div class="flex flex-wrap items-center gap-3">' +
+          '<button id="gPracticeQueue" class="px-7 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">start practice</button>' +
+          (due < cards.length ? '<button id="gPracticeAll" class="px-5 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">drill all ' + cards.length + '</button>' : '') +
+        '</div></div>';
     }
 
     let practiceState = null;
 
-    function startPracticeQueue(id) {
+    function startPracticeQueue(id, all) {
       const g = GPOINTS.filter(function (x) { return x.id === id; })[0];
       if (!g) return;
-      const items = [];
-      g.pt.e.forEach(function (ex) {
-        if (!gkTarget(ex[0])) return;
-        items.push({ kind: 'mc', pt: g.pt, ko: ex[0], en: ex[1], answer: gkTarget(ex[0]), options: buildOptions(gkTarget(ex[0]), ex[2] || g.pt.d) });
-      });
-      if (!items.length) return;
-      practiceState = { id: id, total: items.length, queue: shuffle(items), done: 0, answered: false };
-      renderPracticeQuestion();
+      const cards = cardsFor(g.pt, g.lesson);
+      let queue = all ? cards.slice() : cards.filter(function (c) { return srsDue(id, c); });
+      if (!queue.length) { renderPracticeCaughtUp(id); return; }
+      practiceState = { id: id, total: queue.length, queue: shuffle(queue), done: 0, revealed: false };
+      renderPracticeCard();
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function renderPracticeQuestion() {
+    function renderPracticeCard() {
       if (!practiceState) { renderPoint(state.gpoint); return; }
       if (!practiceState.queue.length) { renderPracticeDone(); return; }
-      const it = practiceState.queue[0];
-      const remaining = practiceState.queue.length;
+      const c = practiceState.queue[0];
+      let front, back;
+      if (c.cloze) {
+        front = '<div class="w-full"><div class="text-sub mb-3">' + esc(c.en) + '</div>' +
+                '<div class="text-2xl leading-relaxed">' + gkBlank(c.cloze) + '</div></div>';
+        back = '<div class="text-2xl text-text mb-3">' + gkMarked(c.cloze) + '</div>' +
+               (c.note ? '<div class="text-xs text-sub/70 max-w-md mx-auto leading-relaxed">' + esc(c.note) + '</div>' : '');
+      } else {
+        front = '<div class="text-3xl text-text">' + esc(c.front) + '</div>';
+        back = '<div class="text-3xl text-main mb-3">' + esc(c.back) + '</div>' +
+               (c.note ? '<div class="text-xs text-sub/60">' + esc(c.note) + '</div>' : '');
+      }
+      const left = practiceState.queue.length;
 
       let h = '<div class="max-w-2xl">';
       h += '<div class="flex items-center justify-between mb-4">' +
              '<button id="pExit" class="text-xs text-sub hover:text-text">← exit</button>' +
-             '<div class="text-xs text-sub/40">' + remaining + ' left · ' + practiceState.done + ' cleared</div></div>';
+             '<div class="text-xs text-sub/40">' + left + ' left</div></div>';
       h += '<div class="h-1.5 w-full bg-line/40 rounded-full overflow-hidden mb-8"><div class="h-full bg-main transition-all duration-300" style="width:' + Math.round(practiceState.done / practiceState.total * 100) + '%"></div></div>';
-      h += '<div class="text-[11px] uppercase tracking-wider text-sub/40 mb-2">choose the right form</div>';
-      h += '<div class="text-sub mb-1">' + esc(it.en) + '</div>';
-      h += '<div class="text-2xl mb-7 leading-relaxed">' + gkBlank(it.ko) + '</div>';
-      h += '<div class="flex flex-wrap gap-2" id="pOptions">';
-      it.options.forEach(function (o, i) { h += '<button class="g-opt" data-popt="' + i + '">' + esc(o) + '</button>'; });
-      h += '</div><div id="pFb" class="mt-6 text-sm min-h-[3rem]"></div></div>';
+      h += '<div class="flashcard" id="pCard">' + front +
+             (practiceState.revealed ? '<div class="w-full mt-6 pt-5 border-t border-line/50">' + back + '</div>' : '') +
+           '</div>';
+      h += '<div class="mt-6">';
+      if (!practiceState.revealed) {
+        h += '<button id="pShow" class="w-full px-6 py-3 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">show answer</button>';
+      } else {
+        h += '<div class="flex items-center gap-3">' +
+               '<button id="pWrong" class="flex-1 px-6 py-3 rounded-lg border border-error/60 text-error text-sm hover:bg-error/10 transition">incorrect</button>' +
+               '<button id="pRight" class="flex-1 px-6 py-3 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">correct</button>' +
+             '</div>';
+      }
+      h += '</div></div>';
 
       $('grammarContent').innerHTML = h;
       $('pExit').addEventListener('click', function () { practiceState = null; renderPoint(state.gpoint); });
-      $('pOptions').querySelectorAll('.g-opt').forEach(function (b) {
-        b.addEventListener('click', function () { answerPractice(Number(b.dataset.popt)); });
-      });
+      if (!practiceState.revealed) {
+        const show = function () { practiceState.revealed = true; renderPracticeCard(); };
+        $('pShow').addEventListener('click', show);
+        $('pCard').addEventListener('click', show);
+      } else {
+        $('pRight').addEventListener('click', function () { gradePractice(true); });
+        $('pWrong').addEventListener('click', function () { gradePractice(false); });
+      }
     }
 
-    function answerPractice(idx) {
-      if (!practiceState || practiceState.answered) return;
-      const it = practiceState.queue[0];
-      const chosen = it.options[idx];
-      const correct = chosen === it.answer;
-      practiceState.answered = true;
+    function gradePractice(correct) {
+      if (!practiceState) return;
+      const c = practiceState.queue.shift();
+      srsGrade(practiceState.id, c, correct);
+      if (correct) practiceState.done++;
+      else practiceState.queue.push(c);   // relearn it later in the session
+      saveSettings();
+      practiceState.revealed = false;
+      renderPracticeCard();
+    }
 
-      $('pOptions').querySelectorAll('.g-opt').forEach(function (b, i) {
-        b.disabled = true;
-        if (it.options[i] === it.answer) b.classList.add('correct');
-        else if (i === idx) b.classList.add('wrong');
-      });
-
-      $('pFb').innerHTML = '<div class="flex items-start justify-between gap-4">' +
-        '<div class="min-w-0">' +
-          (correct ? '<div class="text-main text-sm">✓ correct</div>'
-                   : '<div class="text-error text-sm">✗ back in the queue</div>' + gExplain(it.pt, it, chosen)) +
-          '<div class="text-sub/60 text-xs mt-2 leading-relaxed">' + gkMarked(it.ko) + '</div>' +
-        '</div>' +
-        '<button id="pNext" class="shrink-0 px-5 py-2 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">' + (correct ? 'next' : 'got it') + '</button></div>';
-
-      $('pNext').addEventListener('click', function () {
-        const item = practiceState.queue.shift();
-        if (correct) practiceState.done++;
-        else practiceState.queue.push(item);   // relearn it later
-        practiceState.answered = false;
-        renderPracticeQuestion();
-      });
+    function renderPracticeCaughtUp(id) {
+      const g = GPOINTS.filter(function (x) { return x.id === id; })[0];
+      const cards = cardsFor(g.pt, g.lesson);
+      $('grammarContent').innerHTML = '<div class="max-w-2xl text-center py-10">' +
+        '<div class="text-text text-xl mb-2">all caught up</div>' +
+        '<div class="text-sub text-sm mb-7">Nothing is due right now — the scheduler will bring these back later. You can still drill them all now.</div>' +
+        '<div class="flex flex-wrap items-center justify-center gap-3">' +
+          '<button id="pAll" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">drill all ' + cards.length + '</button>' +
+          '<button id="pBack2" class="px-5 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">back</button>' +
+        '</div></div>';
+      $('pAll').addEventListener('click', function () { startPracticeQueue(id, true); });
+      $('pBack2').addEventListener('click', function () { practiceState = null; renderPoint(id); });
     }
 
     function renderPracticeDone() {
       const id = practiceState.id;
-      const total = practiceState.total;
+      const cleared = practiceState.done;
       if (!state.gprog[id]) state.gprog[id] = {};
       state.gprog[id].mastered = true;
       saveSettings();
@@ -3238,13 +3321,13 @@
       let h = '<div class="max-w-2xl text-center py-10">';
       h += '<div class="flex justify-center mb-5 text-main"><svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg></div>';
       h += '<div class="text-text text-2xl mb-1">all correct</div>';
-      h += '<div class="text-sub text-sm mb-7">' + total + ' cards cleared</div>';
+      h += '<div class="text-sub text-sm mb-7">' + cleared + ' cards cleared</div>';
       h += '<div class="flex flex-wrap items-center justify-center gap-3">' +
              '<button id="pAgain" class="px-5 py-2.5 rounded-lg border border-line text-sub text-sm hover:text-text hover:border-sub transition">practice again</button>' +
              '<button id="pBack" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">back to the lesson</button>' +
            '</div></div>';
       $('grammarContent').innerHTML = h;
-      $('pAgain').addEventListener('click', function () { startPracticeQueue(id); });
+      $('pAgain').addEventListener('click', function () { startPracticeQueue(id, true); });
       $('pBack').addEventListener('click', function () { practiceState = null; renderPoint(id); });
       renderPath();
       window.scrollTo({ top: 0, behavior: 'smooth' });
