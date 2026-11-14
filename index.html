@@ -249,6 +249,24 @@
 
   .g-blank { display: inline-block; min-width: 3.2ch; border-bottom: 2px solid rgb(var(--c-main)); color: rgb(var(--c-main)); }
 
+  /* flashcards */
+  .flashcard {
+    min-height: 17rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 2.5rem 2rem;
+    border: 1px solid rgb(var(--c-line));
+    border-radius: 1rem;
+    background: rgb(var(--c-panel) / .35);
+    cursor: pointer;
+    transition: border-color .15s, background-color .15s;
+  }
+  .flashcard:hover { border-color: rgb(var(--c-sub) / .55); }
+  .card-flip { color: rgb(var(--c-text)); }
+
   ::-webkit-scrollbar { width: 10px; height: 10px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgb(var(--c-line)); border-radius: 8px; }
@@ -281,6 +299,7 @@
         <nav class="flex items-center gap-4 text-sm">
           <button id="tabTyping" class="nav-tab active">typing</button>
           <button id="tabGrammar" class="nav-tab">grammar</button>
+          <button id="tabVocab" class="nav-tab">vocab</button>
         </nav>
       </div>
 
@@ -371,24 +390,27 @@
   </main>
 
   <!-- =====================  GRAMMAR VIEW  ===================== -->
-  <section id="grammarView" class="hidden max-w-6xl mx-auto px-4 sm:px-6 py-8">
-    <div class="flex flex-col lg:flex-row gap-8">
+  <section id="grammarView" class="hidden max-w-6xl mx-auto px-4 sm:px-6 py-10">
+    <div class="flex flex-col lg:flex-row gap-10">
 
-      <!-- learning path -->
-      <aside class="lg:w-[19rem] shrink-0">
-        <div class="flex items-center justify-between mb-4">
-          <div class="text-sub text-xs uppercase tracking-[0.2em]">learning path</div>
-          <div id="gProgressText" class="text-xs text-sub/60"></div>
-        </div>
-        <div class="h-1.5 w-full bg-line/40 rounded-full overflow-hidden mb-5">
-          <div id="gProgressBar" class="h-full bg-main transition-all duration-300" style="width:0%"></div>
-        </div>
-        <div id="grammarPath" class="space-y-3 max-h-[72vh] overflow-y-auto pr-1"></div>
+      <!-- lessons -->
+      <aside class="lg:w-64 shrink-0">
+        <div class="text-sub/40 text-[11px] uppercase tracking-[0.2em] mb-5">lessons</div>
+        <div id="grammarPath" class="space-y-5"></div>
       </aside>
 
-      <!-- lesson content -->
+      <!-- point -->
       <div id="grammarContent" class="flex-1 min-w-0"></div>
     </div>
+  </section>
+
+  <!-- =====================  VOCAB VIEW  ===================== -->
+  <section id="vocabView" class="hidden max-w-4xl mx-auto px-4 sm:px-6 py-10">
+    <div class="mb-8">
+      <div class="text-sub/40 text-[11px] uppercase tracking-[0.2em] mb-2">flashcards</div>
+      <h2 class="text-text text-2xl">Vocabulary</h2>
+    </div>
+    <div id="vocabContent"></div>
   </section>
 
   <!-- =====================  RESULTS OVERLAY  ===================== -->
@@ -738,16 +760,16 @@
           f: ['Sino: 일(1) 이(2) 삼(3) 사(4) 오(5) 육(6) 칠(7) 팔(8) 구(9) 십(10) 백(100) 천(1000) 만(10000)', 'Native: 하나(1) 둘(2) 셋(3) 넷(4) 다섯(5) 여섯(6) 일곱(7) 여덟(8) 아홉(9) 열(10) 스물(20)'],
           d: ['일','이','삼','사','오','육','칠','팔','구','십','하나','둘','셋','다섯','여섯','열','스물'],
           e: [
-            ['Sino 3 = [[삼]]', 'three (Sino)'],
-            ['Sino 5 = [[오]]', 'five (Sino)'],
-            ['Sino 7 = [[칠]]', 'seven (Sino)'],
-            ['Sino 10 = [[십]]', 'ten (Sino)'],
-            ['Sino 20 = [[이십]]', 'twenty (Sino)'],
-            ['Sino 100 = [[백]]', 'one hundred (Sino)'],
-            ['Native 3 = [[셋]]', 'three (Native)'],
-            ['Native 5 = [[다섯]]', 'five (Native)'],
-            ['Native 10 = [[열]]', 'ten (Native)'],
-            ['Native 20 = [[스물]]', 'twenty (Native)']
+            ['[[삼]]', 'three — Sino-Korean'],
+            ['[[오]]', 'five — Sino-Korean'],
+            ['[[칠]]', 'seven — Sino-Korean'],
+            ['[[십]]', 'ten — Sino-Korean'],
+            ['[[이십]]', 'twenty — Sino-Korean'],
+            ['[[백]]', 'one hundred — Sino-Korean'],
+            ['[[셋]]', 'three — native Korean'],
+            ['[[다섯]]', 'five — native Korean'],
+            ['[[열]]', 'ten — native Korean'],
+            ['[[스물]]', 'twenty — native Korean']
           ] }
       ]
     },
@@ -1434,6 +1456,9 @@
       gprog: {},             // grammar progress: { pointId: { done, best } }
       gpoint: null,          // currently open grammar point id
       gmodes: { mc: true, fill: true, full: false },   // drill types
+      gtab: 'study',      // 'study' | 'test'
+      gcard: 0, gflip: false,
+      vlesson: 0, vcard: 0, vflip: false,
       words: [],
       typed: [],
       cursor: 0,
@@ -2040,7 +2065,10 @@
         if (e.key === 'Escape') { e.preventDefault(); setPanel(false); }
         return;
       }
-      if (state.view === 'grammar') { handleGrammarKeys(e); return; }
+      if (state.view !== 'typing') {
+        if (state.view === 'grammar') handleGrammarKeys(e);
+        return;
+      }
       // global restart shortcuts
       if (e.key === 'Tab' || e.key === 'Enter') {
         if (state.status === 'finished') { e.preventDefault(); newTest(false); return; }
@@ -2440,6 +2468,7 @@
           showMeaning: state.showMeaning, inputMode: state.inputMode, showKeyboard: state.showKeyboard,
           speakWords: state.speakWords, voiceName: state.voiceName, voiceRate: state.voiceRate,
           gprog: state.gprog, view: state.view, gmodes: state.gmodes,
+          gtab: state.gtab, vlesson: state.vlesson,
         }));
       } catch (e) { /* storage unavailable — ignore */ }
     }
@@ -2465,7 +2494,9 @@
             full: s.gmodes.full === true
           };
         }
-        if (s.view === 'grammar' || s.view === 'typing') state.view = s.view;
+        if (s.view === 'grammar' || s.view === 'vocab' || s.view === 'typing') state.view = s.view;
+        if (s.gtab === 'study' || s.gtab === 'test') state.gtab = s.gtab;
+        if (typeof s.vlesson === 'number' && s.vlesson >= 0 && s.vlesson < GRAMMAR.length) state.vlesson = s.vlesson;
       } catch (e) { /* corrupted storage — ignore */ }
     }
 
@@ -2528,32 +2559,27 @@
     function gChip(mode, label) {
       return '<button class="seg-btn' + (state.gmodes[mode] ? ' active' : '') + '" data-mode="' + mode + '">' + label + '</button>';
     }
+    // strip everything that is not Hangul so the TTS never reads English/punctuation
+    function gkSpeak(s) {
+      return String(s).replace(/\[\[|\]\]/g, '').replace(/[^\uAC00-\uD7A3\s]/g, ' ').replace(/\s+/g, ' ').trim();
+    }
 
     function renderPath() {
       let h = '';
       GRAMMAR.forEach(function (les) {
-        let doneCount = 0;
-        les.p.forEach(function (pt, pi) { if (gDone('l' + les.l + '-' + (pi + 1))) doneCount++; });
-        h += '<div class="mb-4">' +
-               '<div class="flex items-baseline justify-between gap-2 mb-1 px-1">' +
-                 '<div class="text-sub/50 text-[11px] uppercase tracking-wider">Lesson ' + les.l + ' · ' + esc(les.t) + '</div>' +
-                 '<div class="text-[10px] text-sub/30 shrink-0">' + doneCount + '/' + les.p.length + '</div>' +
-               '</div><div>';
+        h += '<div>' +
+               '<div class="text-sub/40 text-[11px] uppercase tracking-wider mb-2">Lesson ' + les.l + '</div>' +
+               '<div class="space-y-1">';
         les.p.forEach(function (pt, pi) {
           const id = 'l' + les.l + '-' + (pi + 1);
           const done = gDone(id);
           h += '<div class="gp-item' + (state.gpoint === id ? ' active' : '') + '" data-gp="' + id + '">' +
-                 '<span class="w-3 shrink-0 ' + (done ? 'text-main' : 'text-sub/25') + '">' + (done ? '✓' : '·') + '</span>' +
+                 '<span class="w-3 shrink-0 ' + (done ? 'text-main' : 'text-sub/20') + '">' + (done ? '✓' : '·') + '</span>' +
                  '<span class="truncate">' + esc(pt.t) + '</span></div>';
         });
         h += '</div></div>';
       });
       $('grammarPath').innerHTML = h;
-
-      const total = GPOINTS.length;
-      const doneTotal = GPOINTS.filter(function (g) { return gDone(g.id); }).length;
-      $('gProgressText').textContent = doneTotal + ' / ' + total;
-      $('gProgressBar').style.width = (total ? Math.round(doneTotal / total * 100) : 0) + '%';
     }
 
     function renderPoint(id) {
@@ -2562,61 +2588,148 @@
       state.gpoint = id;
       const les = g.lesson, pt = g.pt, done = gDone(id);
 
-      let h = '<div class="text-[11px] uppercase tracking-[0.2em] text-sub/50 mb-1">Lesson ' + les.l + ' · ' + esc(les.t) + '</div>';
-      h += '<h2 class="text-text text-2xl mb-3">' + esc(pt.t) + '</h2>';
-      h += '<p class="text-sub leading-relaxed mb-5 max-w-3xl">' + esc(pt.x) + '</p>';
+      let h = '<div class="max-w-3xl">';
+      h += '<div class="text-[11px] uppercase tracking-[0.2em] text-sub/40 mb-2">Lesson ' + les.l + ' · ' + esc(les.t) + '</div>';
+      h += '<h2 class="text-text text-3xl mb-4">' + esc(pt.t) + '</h2>';
+      h += '<p class="text-sub leading-relaxed mb-8">' + esc(pt.x) + '</p>';
 
-      h += '<div class="mb-6"><div class="text-[11px] uppercase tracking-wider text-sub/50 mb-2">how to form</div><ul class="space-y-1.5">';
+      h += '<div class="mb-8"><div class="text-[11px] uppercase tracking-wider text-sub/40 mb-3">how to form</div><ul class="space-y-2">';
       pt.f.forEach(function (f) {
-        h += '<li class="flex gap-2 text-sm text-text/90"><span class="text-main shrink-0">▸</span><span>' + esc(f) + '</span></li>';
+        h += '<li class="flex gap-2 text-sm text-text/85"><span class="text-main shrink-0">▸</span><span>' + esc(f) + '</span></li>';
       });
       h += '</ul></div>';
 
-      h += '<div class="mb-6"><div class="text-[11px] uppercase tracking-wider text-sub/50 mb-2">lesson ' + les.l + ' vocabulary</div><div class="flex flex-wrap gap-1.5">';
-      les.v.forEach(function (p) {
-        h += '<span class="text-xs px-2 py-1 rounded-md bg-panel border border-line/50"><span class="text-text">' + esc(p[0]) + '</span> <span class="text-sub/60">' + esc(p[1]) + '</span></span>';
-      });
-      h += '</div></div>';
+      h += '<div class="flex items-center gap-2 mb-7">' +
+             '<button class="seg-btn' + (state.gtab === 'study' ? ' active' : '') + '" data-gtab="study">cards</button>' +
+             '<button class="seg-btn' + (state.gtab === 'test' ? ' active' : '') + '" data-gtab="test">test</button>' +
+           '</div>';
 
-      const nEx = pt.e.length;
-      const nFull = pt.e.filter(function (ex) { return /^[가-힣\s?!.,~]+$/.test(gkPlain(ex[0])); }).length;
-      const nItems = (state.gmodes.mc ? nEx : 0) + (state.gmodes.fill ? nEx : 0) + (state.gmodes.full ? nFull : 0);
-      h += '<div class="mb-7 rounded-xl border border-line/40 bg-panel/20 px-4 py-3.5">' +
-             '<div class="flex flex-wrap items-center gap-2 mb-3">' +
-               gChip('mc', 'choose the form') +
-               gChip('fill', 'type the missing part') +
-               gChip('full', 'type the whole sentence') +
-             '</div>' +
-             '<div class="flex flex-wrap items-center gap-4">' +
-               '<button id="gPractice" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">' +
-                 (done ? 'drill again' : 'start drill') + '</button>' +
-               '<span class="text-xs text-sub/50">' + (nItems || nEx) + ' questions</span>' +
-               (done ? '<span class="text-xs text-main">best ' + gBest(id) + '%</span>' : '') +
-             '</div></div>';
-
-      h += '<div class="text-[11px] uppercase tracking-wider text-sub/50 mb-3">examples (' + pt.e.length + ') · click to hear</div>';
-      h += '<div class="space-y-2.5" id="gExamples">';
-      pt.e.forEach(function (ex, i) {
-        h += '<div class="g-ex py-1 cursor-pointer" data-ex="' + i + '" title="click to hear">' +
-               '<div class="text-lg">' + gkMarked(ex[0]) + '</div>' +
-               '<div class="g-en text-sm mt-0.5">' + esc(ex[1]) + '</div></div>';
-      });
+      h += state.gtab === 'test' ? gTestPanel(id, pt, done) : gStudyPanel(id, pt);
       h += '</div>';
 
       $('grammarContent').innerHTML = h;
-      $('gPractice').addEventListener('click', function () { startPractice(id); });
-      $('grammarContent').querySelectorAll('[data-mode]').forEach(function (b) {
+
+      $('grammarContent').querySelectorAll('[data-gtab]').forEach(function (b) {
         b.addEventListener('click', function () {
-          state.gmodes[b.dataset.mode] = !state.gmodes[b.dataset.mode];
-          if (!state.gmodes.mc && !state.gmodes.fill && !state.gmodes.full) state.gmodes.mc = true;
+          state.gtab = b.dataset.gtab;
+          state.gcard = 0; state.gflip = false;
           saveSettings();
           renderPoint(id);
         });
       });
-      $('gExamples').querySelectorAll('.g-ex').forEach(function (el) {
-        el.addEventListener('click', function () { speak(gkPlain(pt.e[Number(el.dataset.ex)][0])); });
-      });
+
+      if (state.gtab === 'test') {
+        $('gPractice').addEventListener('click', function () { startPractice(id); });
+        $('grammarContent').querySelectorAll('[data-mode]').forEach(function (b) {
+          b.addEventListener('click', function () {
+            state.gmodes[b.dataset.mode] = !state.gmodes[b.dataset.mode];
+            if (!state.gmodes.mc && !state.gmodes.fill && !state.gmodes.full) state.gmodes.mc = true;
+            saveSettings();
+            renderPoint(id);
+          });
+        });
+      } else {
+        const idx = function () { return Math.max(0, Math.min(state.gcard, pt.e.length - 1)); };
+        $('flashcard').addEventListener('click', function () {
+          state.gflip = !state.gflip;
+          const en = $('cardEn');
+          if (en) en.textContent = state.gflip ? pt.e[idx()][1] : '';
+        });
+        $('cardAudio').addEventListener('click', function (e) {
+          e.stopPropagation();
+          speak(gkSpeak(pt.e[idx()][0]));
+        });
+        $('cardPrev').addEventListener('click', function () {
+          state.gcard = (state.gcard - 1 + pt.e.length) % pt.e.length;
+          state.gflip = false; renderPoint(id);
+        });
+        $('cardNext').addEventListener('click', function () {
+          state.gcard = (state.gcard + 1) % pt.e.length;
+          state.gflip = false; renderPoint(id);
+        });
+        $('toTest').addEventListener('click', function () { state.gtab = 'test'; saveSettings(); renderPoint(id); });
+      }
+
       renderPath();
+    }
+
+    function gStudyPanel(id, pt) {
+      const n = pt.e.length;
+      const i = Math.max(0, Math.min(state.gcard, n - 1));
+      const ex = pt.e[i];
+      return '<div class="max-w-2xl">' +
+        '<div class="flex items-center justify-between text-xs text-sub/40 mb-3"><span>' + (i + 1) + ' / ' + n + '</span><span>click the card to flip</span></div>' +
+        '<div class="flashcard" id="flashcard">' +
+          '<div class="text-2xl leading-relaxed mb-4">' + gkMarked(ex[0]) + '</div>' +
+          '<div id="cardEn" class="text-sub text-base min-h-[1.5rem]">' + (state.gflip ? esc(ex[1]) : '') + '</div>' +
+        '</div>' +
+        '<div class="flex items-center justify-between mt-5">' +
+          '<button id="cardPrev" class="px-5 py-2 rounded-lg border border-line/60 text-sub text-sm hover:text-text hover:border-sub transition">←</button>' +
+          '<button id="cardAudio" class="px-5 py-2 rounded-lg border border-line/60 text-sub text-sm hover:text-text hover:border-sub transition">play audio</button>' +
+          '<button id="cardNext" class="px-5 py-2 rounded-lg border border-line/60 text-sub text-sm hover:text-text hover:border-sub transition">→</button>' +
+        '</div>' +
+        '<div class="mt-9"><button id="toTest" class="px-6 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">test yourself →</button></div>' +
+      '</div>';
+    }
+
+    function gTestPanel(id, pt, done) {
+      const nEx = pt.e.length;
+      const nFull = pt.e.filter(function (ex) { return /^[가-힣\s?!.,~]+$/.test(gkPlain(ex[0])); }).length;
+      const nItems = (state.gmodes.mc ? nEx : 0) + (state.gmodes.fill ? nEx : 0) + (state.gmodes.full ? nFull : 0);
+      return '<div class="max-w-2xl">' +
+        '<div class="text-[11px] uppercase tracking-wider text-sub/40 mb-3">what to practise</div>' +
+        '<div class="flex flex-wrap gap-2 mb-6">' + gChip('mc', 'multiple choice') + gChip('fill', 'fill the gap') + gChip('full', 'type the sentence') + '</div>' +
+        '<div class="flex flex-wrap items-center gap-4">' +
+          '<button id="gPractice" class="px-7 py-2.5 rounded-lg bg-main text-bg text-sm font-medium hover:opacity-90 transition">start test</button>' +
+          '<span class="text-xs text-sub/40">' + (nItems || nEx) + ' questions</span>' +
+          (done ? '<span class="text-xs text-main">best ' + gBest(id) + '%</span>' : '') +
+        '</div>' +
+      '</div>';
+    }
+
+    function renderVocab() {
+      const li = Math.max(0, Math.min(state.vlesson, GRAMMAR.length - 1));
+      const les = GRAMMAR[li];
+      const n = les.v.length;
+      const i = Math.max(0, Math.min(state.vcard, n - 1));
+      const card = les.v[i];
+
+      let h = '<div class="flex flex-wrap gap-2 mb-9">';
+      GRAMMAR.forEach(function (l, idx) {
+        h += '<button class="seg-btn' + (idx === li ? ' active' : '') + '" data-vlesson="' + idx + '">Lesson ' + l.l + '</button>';
+      });
+      h += '</div>';
+
+      h += '<div class="max-w-2xl mx-auto">' +
+        '<div class="flex items-center justify-between text-xs text-sub/40 mb-3"><span>' + (i + 1) + ' / ' + n + '</span><span>click the card to flip</span></div>' +
+        '<div class="flashcard" id="vcard">' +
+          '<div class="text-4xl mb-4 text-text">' + esc(card[0]) + '</div>' +
+          '<div id="vcardEn" class="text-sub text-lg min-h-[1.75rem]">' + (state.vflip ? esc(card[1]) : '') + '</div>' +
+        '</div>' +
+        '<div class="flex items-center justify-between mt-5">' +
+          '<button id="vPrev" class="px-5 py-2 rounded-lg border border-line/60 text-sub text-sm hover:text-text hover:border-sub transition">←</button>' +
+          '<button id="vAudio" class="px-5 py-2 rounded-lg border border-line/60 text-sub text-sm hover:text-text hover:border-sub transition">play audio</button>' +
+          '<button id="vNext" class="px-5 py-2 rounded-lg border border-line/60 text-sub text-sm hover:text-text hover:border-sub transition">→</button>' +
+        '</div>' +
+      '</div>';
+
+      $('vocabContent').innerHTML = h;
+
+      $('vocabContent').querySelectorAll('[data-vlesson]').forEach(function (b) {
+        b.addEventListener('click', function () {
+          state.vlesson = Number(b.dataset.vlesson);
+          state.vcard = 0; state.vflip = false;
+          saveSettings(); renderVocab();
+        });
+      });
+      $('vcard').addEventListener('click', function () {
+        state.vflip = !state.vflip;
+        const en = $('vcardEn');
+        if (en) en.textContent = state.vflip ? card[1] : '';
+      });
+      $('vAudio').addEventListener('click', function (e) { e.stopPropagation(); speak(gkSpeak(card[0])); });
+      $('vPrev').addEventListener('click', function () { state.vcard = (state.vcard - 1 + n) % n; state.vflip = false; renderVocab(); });
+      $('vNext').addEventListener('click', function () { state.vcard = (state.vcard + 1) % n; state.vflip = false; renderVocab(); });
     }
 
     function buildOptions(answer, d) {
@@ -2863,21 +2976,27 @@
     }
 
     function setView(v) {
-      state.view = (v === 'grammar') ? 'grammar' : 'typing';
+      state.view = (v === 'grammar' || v === 'vocab') ? v : 'typing';
       const isTyping = state.view === 'typing';
       $('typingView').classList.toggle('hidden', !isTyping);
-      $('grammarView').classList.toggle('hidden', isTyping);
-      $('tabTyping').classList.toggle('active', isTyping);
-      $('tabGrammar').classList.toggle('active', !isTyping);
+      $('grammarView').classList.toggle('hidden', state.view !== 'grammar');
+      $('vocabView').classList.toggle('hidden', state.view !== 'vocab');
+      $('tabTyping').classList.toggle('active', state.view === 'typing');
+      $('tabGrammar').classList.toggle('active', state.view === 'grammar');
+      $('tabVocab').classList.toggle('active', state.view === 'vocab');
       if (isTyping) {
         if (!panelOpen) capture.focus({ preventScroll: true });
       } else {
         stopSpeech();
         if (capture.blur) capture.blur();
-        renderPath();
-        if (!state.gpoint) {
-          const idx = gCurrentIndex();
-          if (GPOINTS[idx]) renderPoint(GPOINTS[idx].id);
+        if (state.view === 'grammar') {
+          renderPath();
+          if (!state.gpoint) {
+            const idx = gCurrentIndex();
+            if (GPOINTS[idx]) renderPoint(GPOINTS[idx].id);
+          }
+        } else {
+          renderVocab();
         }
       }
       saveSettings();
@@ -2885,6 +3004,7 @@
 
     $('tabTyping').addEventListener('click', function () { setView('typing'); });
     $('tabGrammar').addEventListener('click', function () { setView('grammar'); });
+    $('tabVocab').addEventListener('click', function () { setView('vocab'); });
     $('grammarPath').addEventListener('click', function (e) {
       const item = e.target.closest('[data-gp]');
       if (!item || item.classList.contains('locked')) return;
