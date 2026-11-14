@@ -85,15 +85,13 @@
   /* the English meaning, rendered under the active word inside the text area */
   .word-meaning {
     position: absolute;
-    font-size: .78rem;
+    font-size: .72rem;
     line-height: 1.2;
     letter-spacing: .03em;
     color: color-mix(in srgb, rgb(var(--c-sub)), rgb(var(--c-text)) 15%);
     white-space: nowrap;
     pointer-events: none;
-    transition: left .12s ease-out, top .12s ease-out;
   }
-  .word-meaning::before { content: '— '; opacity: .5; }
 
   .caret {
     display: inline-block;
@@ -1061,16 +1059,40 @@
         const shift = Math.max(0, line - 1);
         wordsEl.style.transform = 'translateY(' + (-shift * step) + 'px)';
 
-        if (state.showMeaning && state.words[state.cursor]) {
-          const label = document.createElement('span');
-          label.className = 'word-meaning';
-          label.textContent = state.words[state.cursor][1];
-          wordsEl.appendChild(label);
-          const cx = activeEl.offsetLeft + activeEl.offsetWidth / 2;
-          const cy = activeEl.offsetTop + activeEl.offsetHeight + 2;
-          label.style.top = cy + 'px';
-          const maxLeft = Math.max(0, wordsEl.clientWidth - label.offsetWidth);
-          label.style.left = Math.max(0, Math.min(maxLeft, cx - label.offsetWidth / 2)) + 'px';
+        // English meanings: shown once a word has been typed correctly and
+        // kept visible underneath it as you move on.
+        if (state.showMeaning) {
+          const wordEls = wordsEl.querySelectorAll('.word');
+          const placed = [];
+          for (let i = 0; i < state.words.length; i++) {
+            const pair = state.words[i];
+            const el = wordEls[i];
+            if (!pair || !el) continue;
+
+            const typedIt = (i < state.cursor) || (i === state.cursor && activeText() === pair[0]);
+            if (!typedIt) continue;
+
+            const label = document.createElement('span');
+            label.className = 'word-meaning';
+            label.textContent = pair[1];
+            wordsEl.appendChild(label);
+
+            const w = label.offsetWidth;
+            const cx = el.offsetLeft + el.offsetWidth / 2;
+            const left = Math.max(0, Math.min(wordsEl.clientWidth - w, cx - w / 2));
+            const lineTop = el.offsetTop;
+            const baseY = el.offsetTop + el.offsetHeight + 2;
+
+            // drop to a second sub-row if it would collide with a neighbour on this line
+            let row = 0;
+            while (row < 2 && placed.some((p) => p.lineTop === lineTop && p.row === row &&
+                   left < p.right + 6 && (left + w) > p.left - 6)) {
+              row++;
+            }
+            label.style.top = (baseY + row * 16) + 'px';
+            label.style.left = left + 'px';
+            placed.push({ lineTop: lineTop, row: row, left: left, right: left + w });
+          }
         }
       }
     }
