@@ -2820,21 +2820,79 @@
       renderPath();
     }
 
+    const PARTICLE_ROLE = {
+      '이': 'subject', '가': 'subject',
+      '은': 'topic', '는': 'topic',
+      '을': 'object', '를': 'object',
+      '도': 'also', '만': 'only',
+      '에': 'place', '에서': 'action', '의': 'possession'
+    };
+
+    function lastSyllableHasBatchim(word) {
+      if (!word) return null;
+      const ch = word.slice(-1);
+      const c = ch.charCodeAt(0);
+      if (c < 0xAC00 || c > 0xD7A3) return null;
+      return (c - 0xAC00) % 28 !== 0;
+    }
+
+    // a sentence-specific reason for the highlighted form
+    function gWhyLine(pt, ex) {
+      const raw = ex[0];
+      const m = /\[\[(.+?)\]\]/.exec(raw);
+      if (!m) return '';
+      const target = m[1];
+      const ko = gkPlain(raw);
+      const before = gkPlain(raw.slice(0, raw.indexOf('[['))).trim();
+      const host = before.split(/\s+/).pop() || '';
+      const verb = ko.replace(/[?!.,~]/g, '').trim().split(/\s+/).pop() || '';
+      const role = PARTICLE_ROLE[target];
+
+      if (role && host) {
+        const batchim = lastSyllableHasBatchim(host);
+        let why = '';
+        if (batchim !== null) {
+          why = '“' + host + '” ends ' + (batchim ? 'in a consonant' : 'in a vowel') + ', so it takes ' + target + '. ';
+        }
+        if (role === 'subject') why += 'That makes “' + host + '” the subject of the sentence.';
+        else if (role === 'object') why += 'That makes “' + host + '” the object that “' + verb + '” acts on.';
+        else if (role === 'topic') why += 'That sets “' + host + '” up as the topic — “as for ' + host + ' …”.';
+        else if (role === 'also') why += 'That means “' + host + ' too”, replacing 이/가 or 은/는.';
+        else if (role === 'only') why += 'That means “' + host + ' only”.';
+        else if (role === 'place') why += 'That marks where “' + host + '” is, or when it happens.';
+        else if (role === 'action') why += 'That marks “' + host + '” as the place where the action happens.';
+        else if (role === 'possession') why += 'That makes “' + host + '” the possessor — “' + host + '’s …”.';
+        return why.trim();
+      }
+
+      // verb endings that attach to a stem
+      if (host && /(요|까요|래요|게요|지요|잖아요)$/.test(target)) {
+        return '“' + target + '” is attached to “' + host + '” here, giving “' + ko + '”.';
+      }
+      return '';
+    }
+
     function gCardWhy(pt, ex) {
       const raw = ex[0];
       const m = /\[\[(.+?)\]\]/.exec(raw);
+      const target = m ? m[1] : '';
+      const before = m ? gkPlain(raw.slice(0, raw.indexOf('[['))).trim() : '';
+      const prev = before.split(/\s+/).pop();
+      const gloss = (pt.hints && pt.hints[target]) || FORM_GLOSS[target] || '';
+      const tailored = gWhyLine(pt, ex);
+
       let h = '<div class="text-left max-w-md mx-auto mt-5 pt-4 border-t border-line/50">';
       h += '<div class="text-[10px] uppercase tracking-wider text-sub/40 mb-2">why this form</div>';
-      if (m) {
-        const target = m[1];
-        const before = gkPlain(raw.slice(0, raw.indexOf('[['))).trim();
-        const prev = before.split(/\s+/).pop();
-        const gloss = (pt.hints && pt.hints[target]) || FORM_GLOSS[target] || '';
+      if (target) {
         h += '<div class="text-sm text-text"><span class="text-main">' + esc(target) + '</span>' +
              (gloss ? ' <span class="text-sub/70">— ' + esc(gloss) + '</span>' : '') + '</div>';
-        if (prev) h += '<div class="text-xs text-sub/60 mt-1">attaches to “' + esc(prev) + '”</div>';
       }
-      h += '<div class="text-xs text-sub/60 mt-2 leading-relaxed">' + esc(pt.x) + '</div>';
+      if (tailored) {
+        h += '<div class="text-xs text-sub/80 mt-2 leading-relaxed">' + esc(tailored) + '</div>';
+      } else {
+        if (prev) h += '<div class="text-xs text-sub/60 mt-1">attaches to “' + esc(prev) + '”</div>';
+        h += '<div class="text-xs text-sub/60 mt-2 leading-relaxed">' + esc(pt.x) + '</div>';
+      }
       h += '</div>';
       return h;
     }
