@@ -1949,8 +1949,16 @@
       return true;
     }
 
+    let lastCommit = { value: null, t: 0 };
     function commit(value) {
       if (value && value.normalize) value = value.normalize('NFC');
+      // Guard against a word being committed twice (e.g. the built-in IME commits
+      // on the space keydown and the OS IME also drops a space into the input,
+      // which would advance the cursor twice and make every later word look wrong).
+      const now = Date.now();
+      if (value && value === lastCommit.value && now - lastCommit.t < 250) { capture.value = ''; return; }
+      lastCommit = { value: value, t: now };
+      capture.value = '';
       state.typed[state.cursor] = value;
       ensureStarted();
       markTyping();
@@ -2173,6 +2181,7 @@
           e.preventDefault();
           const v = (state.typed[state.cursor] || '') + imeRender();
           imeReset();
+          capture.value = '';
           if (v.length === 0) { render(); return; }  // ignore stray space
           commit(v);
           return;
